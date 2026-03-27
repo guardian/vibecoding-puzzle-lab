@@ -75,7 +75,7 @@ function RootPage() {
   const [containerState, setContainerState] = useState<ContainerState>(ContainerState.NotReady)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [devServerLogs, setDevServerLogs] = useState<string[]>([])
-  const extensions = useMemo(() => [javascript()], [])
+  const extensions = useMemo(() => [javascript({ jsx: true })], [])
   const webContainerRef = useRef<WebContainer | null>(null)
   const runtimeRef = useRef(createWebContainerRuntimeState())
   const logsViewportRef = useRef<HTMLPreElement | null>(null)
@@ -152,6 +152,11 @@ function RootPage() {
     });
   }, [code, containerState]);
   
+  const codeDidChange = (value: string) => {
+    const timeoutId = setTimeout(()=>setCode(value), 1000);
+    return () => clearTimeout(timeoutId);
+  }
+  
   return (
     <main className="root-page">
       <section className="editor-column" aria-label="JavaScript editor">
@@ -159,7 +164,7 @@ function RootPage() {
           value={code}
           height="100%"
           extensions={extensions}
-          onChange={(value) => setCode(value)}
+          onChange={codeDidChange}
         />
       </section>
 
