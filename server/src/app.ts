@@ -2,6 +2,7 @@ import express, { Express, Request, response, Response } from 'express';
 import { getConfig } from './config.js';
 import { putToS3, getFromS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
+import { DebugRequest } from './models.js';
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -58,6 +59,42 @@ export async function createApp(): Promise<Express> {
     res.json({ status: 'ok' });
   });
 
+  app.post('/api/:bundleid/debug', async (req: Request, res: Response) => {
+    const { bundleid } = req.params;
+    const details = DebugRequest.safeParse(req.body);
+    if (!details.success) {
+      res.status(400).json({ error: 'Invalid request body', details: details.error });
+      return;
+    }
+
+    const helperPrefix = "{\"jsx\":";
+    const messages = [
+      userMessage(`The code you provided is not working, please fix it. Here is the code: \`\`\`jsx\n${details.data.jsx}\`\`\` 
+        The last error message was: "${details.data.lastError}". 
+        Here are the container logs: \`\`\`${details.data.containerLogs ?? 'No container logs provided'}\`\`\``),
+      assistantMessage(helperPrefix)
+    ];
+
+    for(let retry = 0; retry < 3; retry++) {
+      const result = await callBedrock({
+        messages,
+        maxTokens: 60000,
+        modelId: config['bedrock_model_id'],
+      });
+
+        try {
+          const responseJson = extractJson(result.response, helperPrefix);
+          res.json(responseJson);
+          return;
+        } catch(err) {
+          console.warn("Failed to parse Bedrock response as JSON, adding more context and retrying:", err);
+          messages.push(userMessage(`I couldn't parse this json: ${helperPrefix + extractText(result.response)}`));
+          messages.push(assistantMessage(helperPrefix));
+        }
+    }
+    res.status(500).json({ error: "The model could not produce understandable output" });
+  });
+
   app.post('/api/:bundleId/prompt', async (req: Request, res: Response) => {
     const { bundleId } = req.params;
 
@@ -77,7 +114,7 @@ export async function createApp(): Promise<Express> {
       const helperPrefix = "{\"jsx\":";
       let messages = [userMessage(sanitizedPromptText), assistantMessage(helperPrefix)];
 
-      while(1) {
+      for(let retry = 0; retry < 3; retry++) {
         const result = await callBedrock({
           messages,
           maxTokens: 60000,
@@ -94,7 +131,8 @@ export async function createApp(): Promise<Express> {
           messages.push(assistantMessage(helperPrefix));
         }
       }
-      
+      res.status(500).json({ error: "The model could not produce understandable output" });
+
     } catch (err) {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });

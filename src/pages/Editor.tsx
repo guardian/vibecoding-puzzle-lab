@@ -92,6 +92,7 @@ type PreviewError = {
 function Editor() {
   const { bundleId } = useParams<{ bundleId: string }>();
   const [code, setCode] = useState("");
+  const [modelNotes,setModelNotes] = useState<string[]>([]);
   const [containerState, setContainerState] = useState<ContainerState>(ContainerState.NotReady)
   const [modelState, setModelState] = useState<ModelState>(ModelState.Ready);
   const [wrapLines, setWrapLines] = useState(false)
@@ -184,6 +185,46 @@ function Editor() {
       window.removeEventListener('message', onPreviewMessage)
     }
   }, [])
+
+  useEffect(()=>{
+    const asyncDebug = async () => {
+      setModelState(ModelState.Thinking);
+      const modelResponse = await fetch(`/api/${bundleId}/debug`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsx: code,
+          lastError: lastPreviewError ? `${lastPreviewError.kind}: ${lastPreviewError.message}` : 'No error information',
+          containerLogs: devServerLogs.join('\n'),
+        }),
+      });
+      if(modelResponse.ok) {
+        const parsedResponse = ModelResponse.safeParse(await modelResponse.json());
+        if(parsedResponse.success) {
+          setCode(parsedResponse.data.jsx ?? code);
+          if(parsedResponse.data.explanation) setModelNotes((notes) => [...notes, parsedResponse.data.explanation ?? '']);
+          setModelState(ModelState.Ready);
+          setPreviewCrashed(false);
+          setLastPreviewError(null);
+        } else {
+          console.error('Failed to parse model response:', parsedResponse.error);
+          setModelState(ModelState.Error);
+        }
+      } else {
+        console.error('Model debug request failed with status:', modelResponse.status);
+        setModelState(ModelState.Error);
+      }
+    }
+
+    if(previewCrashed) {
+      asyncDebug().catch((error) => {
+        console.error('Error during debugging:', error);
+        setModelState(ModelState.Error);
+      });  
+    }
+  }, [previewCrashed]);
 
   useEffect(() => {
     // A new preview URL means a new dev-server session; clear stale crash state.
