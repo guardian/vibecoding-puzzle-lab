@@ -54,7 +54,7 @@ export async function createApp(): Promise<Express> {
   );
 
   // Health check endpoint
-  app.get('/health', (req: Request, res: Response) => {
+  app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
   });
 

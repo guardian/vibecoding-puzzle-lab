@@ -1,0 +1,6 @@
+name: puzzle-lab
+mappings:
+  # - port: 3000
+  #   prefix: puzzle-lab
+  - port: 5173
+    prefix: puzzle-lab

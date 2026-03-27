@@ -1,10 +1,12 @@
 import { Route, Routes } from 'react-router'
-import RootPage from './pages/RootPage'
+import Index from './pages/Index'
+import Editor from './pages/Editor'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<RootPage />} />
+      <Route path="/" element={<Index />} />
+      <Route path="/bundle/:bundleId" element={<Editor />} />
     </Routes>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useParams } from 'react-router'
 import CodeMirror from '@uiw/react-codemirror'
 import { javascript } from '@codemirror/lang-javascript'
 import type { WebContainer } from '@webcontainer/api'
@@ -10,7 +11,7 @@ import {
   setupWebContainer,
   writeRootFile,
 } from './webcontainer'
-import './RootPage.css'
+import './Editor.css'
 
 const initialCode = `import { createRoot } from 'react-dom/client'
 import { useState } from 'react'
@@ -70,7 +71,8 @@ const securePreviewDoc = `<!doctype html>
   <body></body>
 </html>`
 
-function RootPage() {
+function Editor() {
+  const { bundleId } = useParams<{ bundleId: string }>()
   const [code, setCode] = useState(initialCode)
   const [containerState, setContainerState] = useState<ContainerState>(ContainerState.NotReady)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -158,7 +160,7 @@ function RootPage() {
   }
   
   return (
-    <main className="root-page">
+    <main className="root-page" data-bundle-id={bundleId ?? ''}>
       <section className="editor-column" aria-label="JavaScript editor">
         <CodeMirror
           value={code}
@@ -210,4 +212,4 @@ function RootPage() {
   )
 }
 
-export default RootPage
+export default Editor
