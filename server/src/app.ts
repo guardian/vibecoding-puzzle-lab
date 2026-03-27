@@ -1,6 +1,44 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, response, Response } from 'express';
 import { getConfig } from './config.js';
 import { putToS3, getFromS3 } from './s3.js';
+import { callBedrock, userMessage, extractText, assistantMessage } from './bedrock.js';
+
+function stripInvalidUnicodeSurrogates(input: string): string {
+  let out = '';
+
+  for (let i = 0; i < input.length; i += 1) {
+    const code = input.charCodeAt(i);
+
+    // Keep valid surrogate pairs and drop unmatched surrogate halves.
+    if (code >= 0xD800 && code <= 0xDBFF) {
+      const next = input.charCodeAt(i + 1);
+      if (next >= 0xDC00 && next <= 0xDFFF) {
+        out += input[i] + input[i + 1];
+        i += 1;
+      }
+      continue;
+    }
+
+    if (code >= 0xDC00 && code <= 0xDFFF) {
+      continue;
+    }
+
+    out += input[i];
+  }
+
+  return out;
+}
+
+function sanitizePromptText(promptText: string): string {
+  const withoutInvalidSurrogates = stripInvalidUnicodeSurrogates(promptText);
+
+  // Round-trip through UTF-8 to ensure we pass valid UTF-8 text downstream.
+  const utf8Bytes = Buffer.from(withoutInvalidSurrogates, 'utf8');
+  const utf8Text = new TextDecoder('utf-8', { fatal: true }).decode(utf8Bytes);
+
+  // Remove all control/unprintable Unicode categories.
+  return utf8Text.replace(/[\p{C}]/gu, '').trim();
+}
 
 export async function createApp(): Promise<Express> {
   const app = express();
@@ -9,11 +47,46 @@ export async function createApp(): Promise<Express> {
   console.log("Loaded config:", config);
   
   // Middleware
-  app.use(express.json());
+  app.use(
+    express.json({
+      type: ['application/json', 'application/*+json', 'text/json'],
+    })
+  );
 
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
+  });
+
+  app.post('/api/:bundleId/prompt', async (req: Request, res: Response) => {
+    const { bundleId } = req.params;
+
+    try {
+      const promptText = req.body?.promptText;
+      if (typeof promptText !== 'string') {
+        res.status(400).json({ error: 'promptText is required and must be a string' });
+        return;
+      }
+
+      const sanitizedPromptText = sanitizePromptText(promptText);
+      if (sanitizedPromptText.length === 0) {
+        res.status(400).json({ error: 'promptText contains no valid characters after sanitization' });
+        return;
+      }
+
+      const result = await callBedrock({
+        messages: [userMessage(sanitizedPromptText), assistantMessage("{\"jsx\":")],
+        maxTokens: 60000,
+        modelId: config['bedrock_model_id'],
+      });
+
+      const responseText = extractText(result.response);
+      //const responseJson = JSON.parse(responseText);
+      res.json(responseText);
+    } catch (err) {
+      console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
+      res.status(500).json({ error: 'Failed to generate response' });
+    }
   });
 
   // Save a bundle to S3
