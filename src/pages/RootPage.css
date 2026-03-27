@@ -1,0 +1,39 @@
+.root-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.editor-column,
+.preview-column {
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor-column {
+  border: 1px solid #d9d9d9;
+}
+
+.editor-column .cm-editor {
+  height: 100%;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 32px);
+  border: 2px solid #4a4a4a;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .root-page {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-frame {
+    min-height: 45vh;
+  }
+}

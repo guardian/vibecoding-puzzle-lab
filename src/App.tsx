@@ -1,8 +1,5 @@
 import { Route, Routes } from 'react-router'
-
-function RootPage() {
-  return null
-}
+import RootPage from './pages/RootPage'
 
 function App() {
   return (
