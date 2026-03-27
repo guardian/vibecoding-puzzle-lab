@@ -438,6 +438,85 @@ export function extractText(response: BedrockResponse): string {
     .join("");
 }
 
+function findCompleteJsonEndIndex(input: string): number {
+  let inString = false;
+  let isEscaped = false;
+  let depth = 0;
+  let started = false;
+  let endIndex = -1;
+
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+
+    if (!started) {
+      if (char === "{" || char === "[") {
+        started = true;
+        depth = 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        isEscaped = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{" || char === "[") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}" || char === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        endIndex = i;
+      }
+    }
+  }
+
+  return endIndex;
+}
+
+/**
+ * Parse JSON from text extracted from model output.
+ * If parsing fails, trim trailing non-JSON suffix and retry.
+ */
+export function extractJson<T = unknown>(response: BedrockResponse, prefix?: string): T {
+    const text = extractText(response);
+  const trimmed = prefix ? prefix + text.trim() : text.trim();
+
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch (initialError) {
+    console.warn("Initial JSON parsing failed, attempting to trim trailing content and retry:", initialError);
+    console.log(trimmed);
+    const endIndex = findCompleteJsonEndIndex(trimmed);
+    if (endIndex < 0) {
+      throw initialError;
+    }
+
+    const candidate = trimmed.slice(0, endIndex + 1);
+    return JSON.parse(candidate) as T;
+  }
+}
+
 /**
  * Extract tool uses from response content blocks
  */

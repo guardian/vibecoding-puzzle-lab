@@ -1,7 +1,7 @@
 import express, { Express, Request, response, Response } from 'express';
 import { getConfig } from './config.js';
 import { putToS3, getFromS3 } from './s3.js';
-import { callBedrock, userMessage, extractText, assistantMessage } from './bedrock.js';
+import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -80,9 +80,8 @@ export async function createApp(): Promise<Express> {
         modelId: config['bedrock_model_id'],
       });
 
-      const responseText = extractText(result.response);
-      //const responseJson = JSON.parse(responseText);
-      res.json(responseText);
+      const responseJson = extractJson(result.response, "{\"jsx\":");
+      res.json(responseJson);
     } catch (err) {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });
