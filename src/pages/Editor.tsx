@@ -12,6 +12,7 @@ import {
   writeRootFile,
 } from './webcontainer'
 import './Editor.css'
+import { ModelResponse } from './models'
 
 const initialCode = `import { createRoot } from 'react-dom/client'
 import { useState } from 'react'
@@ -48,7 +49,7 @@ function App() {
 
         {enabled && (
           <div className="mt-6 rounded-xl border border-slate-600 bg-slate-700/50 p-4">
-            Edit this file and the preview will hot-update.
+            We are waiting for the model to generate your code bundle. This can take up to a minute, so please be patient. Once it's ready, the preview will load here and you can interact with it in real time as we make updates to the code.
           </div>
         )}
       </div>
@@ -71,10 +72,17 @@ const securePreviewDoc = `<!doctype html>
   <body></body>
 </html>`
 
+enum ModelState {
+  Ready = 'ready',
+  Thinking = 'thinking',
+  Error = 'error',
+  Query = 'query'
+}
 function Editor() {
-  const { bundleId } = useParams<{ bundleId: string }>()
-  const [code, setCode] = useState(initialCode)
+  const { bundleId } = useParams<{ bundleId: string }>();
+  const [code, setCode] = useState("");
   const [containerState, setContainerState] = useState<ContainerState>(ContainerState.NotReady)
+  const [modelState, setModelState] = useState<ModelState>(ModelState.Ready);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [devServerLogs, setDevServerLogs] = useState<string[]>([])
   const extensions = useMemo(() => [javascript({ jsx: true })], [])
@@ -102,6 +110,50 @@ function Editor() {
 
     logsViewportRef.current.scrollTop = logsViewportRef.current.scrollHeight;
   }, [devServerLogs]);
+
+  useEffect(()=>{
+    const asyncLoad = async () => {
+      const response = await fetch(`/api/bundle/${bundleId}`);
+      if(response.status===404) {
+        const initialPrompt = localStorage.getItem('temp-prompt-cache') ?? '';
+        if(initialPrompt) {
+          setModelState(ModelState.Thinking);
+          const modelResponse = await fetch(`/api/${bundleId}/prompt`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ promptText: initialPrompt }),
+          });
+          if(modelResponse.ok) {
+            const parsedResponse = ModelResponse.safeParse(await modelResponse.json());
+            if(parsedResponse.success) {
+              setCode(parsedResponse.data.jsx ?? initialCode);
+              setModelState(ModelState.Ready);
+            } else {
+              console.error('Failed to parse model response:', parsedResponse.error);
+              setCode(initialCode);
+              setModelState(ModelState.Error);
+            }
+          } else {
+            console.error('Model generation request failed with status:', modelResponse.status);
+            setCode(initialCode);
+            setModelState(ModelState.Error);
+          }
+        } else {
+          setCode(initialCode);
+        }
+      } else {
+        setCode("// Loading is not implemented yet, but we did find the bundle :)")
+      }
+    }
+
+    asyncLoad().catch((error) => {
+      console.error('Error loading bundle:', error);
+      setCode(initialCode);
+      setModelState(ModelState.Error);
+    });
+  }, [bundleId]);
 
   useEffect(() => {
     let isDisposed = false;
@@ -138,7 +190,7 @@ function Editor() {
       webContainerRef.current = null;
       releaseWebContainer(runtimeRef.current)
     }
-  }, []);
+  }, [bundleId]);
 
   useEffect(() => {
     async function updateCodeInContainer() {
@@ -172,7 +224,8 @@ function Editor() {
 
       <section className="preview-column" aria-label="Preview panel">
         <div className="state-container">
-          <span>Container state: {containerState}</span>
+          <span style={{marginRight: "1em"}}>Container state: {containerState}</span>
+          <span>Model state: {modelState}</span>
           {progressBarTotal > 0 && (
             <div className="progress-bar-wrapper">
               <div 
