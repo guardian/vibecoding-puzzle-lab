@@ -280,7 +280,54 @@ async function ensureDevServerRunning(
 }
 
 export async function writeRootFile(container: WebContainer, sourceCode: string) {
-  await container.fs.writeFile('/app/src/main.jsx', sourceCode)
+  const errorBridge = `
+
+// Relay runtime and DOM errors to the parent app so the editor can surface iframe failures.
+const __puzzleLabPostError = (payload) => {
+  try {
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      window.parent.postMessage({ source: 'puzzle-lab-preview', type: 'preview-error', payload }, '*')
+    }
+  } catch {
+    // Ignore cross-origin access issues while reporting errors.
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    const target = event.target
+    if (target && target !== window) {
+      const element = /** @type {Element} */ (target)
+      __puzzleLabPostError({
+        kind: 'dom-error',
+        tagName: element.tagName || 'unknown',
+        message: 'Resource failed to load: <' + String(element.tagName || 'unknown').toLowerCase() + '>',
+      })
+      return
+    }
+
+    __puzzleLabPostError({
+      kind: 'runtime-error',
+      message: event.message || 'Unknown runtime error',
+      fileName: event.filename || '',
+      lineNumber: event.lineno || 0,
+      columnNumber: event.colno || 0,
+      stack: event.error && event.error.stack ? String(event.error.stack) : '',
+    })
+  }, true)
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason
+    __puzzleLabPostError({
+      kind: 'unhandled-rejection',
+      message: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error && reason.stack ? reason.stack : '',
+    })
+  })
+}
+`
+
+  await container.fs.writeFile('/app/src/main.jsx', `${sourceCode}${errorBridge}`)
 }
 
 export async function acquireWebContainer(runtime: WebContainerRuntimeState): Promise<WebContainer> {

@@ -78,6 +78,17 @@ enum ModelState {
   Error = 'error',
   Query = 'query'
 }
+
+type PreviewError = {
+  kind: 'dom-error' | 'runtime-error' | 'unhandled-rejection'
+  message: string
+  fileName?: string
+  lineNumber?: number
+  columnNumber?: number
+  stack?: string
+  tagName?: string
+}
+
 function Editor() {
   const { bundleId } = useParams<{ bundleId: string }>();
   const [code, setCode] = useState("");
@@ -85,11 +96,14 @@ function Editor() {
   const [modelState, setModelState] = useState<ModelState>(ModelState.Ready);
   const [wrapLines, setWrapLines] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewCrashed, setPreviewCrashed] = useState(false)
+  const [lastPreviewError, setLastPreviewError] = useState<PreviewError | null>(null)
   const [devServerLogs, setDevServerLogs] = useState<string[]>([])
   const extensions = useMemo(() => [javascript({ jsx: true })], [])
   const webContainerRef = useRef<WebContainer | null>(null)
   const runtimeRef = useRef(createWebContainerRuntimeState())
   const logsViewportRef = useRef<HTMLPreElement | null>(null)
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null)
 
   const [progressBarValue, setProgressBarValue] = useState(0);
   const [progressBarTotal, setProgressBarTotal] = useState(0);
@@ -111,6 +125,71 @@ function Editor() {
 
     logsViewportRef.current.scrollTop = logsViewportRef.current.scrollHeight;
   }, [devServerLogs]);
+
+  useEffect(() => {
+    function onPreviewMessage(event: MessageEvent) {
+      if (!previewFrameRef.current || event.source !== previewFrameRef.current.contentWindow) {
+        return
+      }
+
+      const data = event.data
+      if (!data || typeof data !== 'object') return
+      if (data.source !== 'puzzle-lab-preview' || data.type !== 'preview-error') return
+
+      const payload = data.payload
+      if (!payload || typeof payload !== 'object') return
+
+      if (payload.kind === 'dom-error') {
+        setLastPreviewError({
+          kind: 'dom-error',
+          message: String(payload.message ?? 'DOM error'),
+          tagName: payload.tagName ? String(payload.tagName) : undefined,
+        })
+        addDevServerLog(`[preview][dom] ${String(payload.message ?? 'DOM error')} ${payload.tagName ? `(tag: ${String(payload.tagName)})` : ''}`.trim())
+        return
+      }
+
+      if (payload.kind === 'unhandled-rejection') {
+        setPreviewCrashed(true)
+        setLastPreviewError({
+          kind: 'unhandled-rejection',
+          message: String(payload.message ?? 'Unhandled promise rejection'),
+          stack: payload.stack ? String(payload.stack) : undefined,
+        })
+        addDevServerLog(`[preview][promise] ${String(payload.message ?? 'Unhandled promise rejection')}`)
+        if (payload.stack) {
+          addDevServerLog(`[preview][promise][stack] ${String(payload.stack)}`)
+        }
+        return
+      }
+
+      setPreviewCrashed(true)
+      setLastPreviewError({
+        kind: 'runtime-error',
+        message: String(payload.message ?? 'Runtime error'),
+        fileName: payload.fileName ? String(payload.fileName) : undefined,
+        lineNumber: Number(payload.lineNumber ?? 0),
+        columnNumber: Number(payload.columnNumber ?? 0),
+        stack: payload.stack ? String(payload.stack) : undefined,
+      })
+      const fileName = payload.fileName ? ` @ ${String(payload.fileName)}:${String(payload.lineNumber ?? 0)}:${String(payload.columnNumber ?? 0)}` : ''
+      addDevServerLog(`[preview][runtime] ${String(payload.message ?? 'Runtime error')}${fileName}`)
+      if (payload.stack) {
+        addDevServerLog(`[preview][runtime][stack] ${String(payload.stack)}`)
+      }
+    }
+
+    window.addEventListener('message', onPreviewMessage)
+    return () => {
+      window.removeEventListener('message', onPreviewMessage)
+    }
+  }, [])
+
+  useEffect(() => {
+    // A new preview URL means a new dev-server session; clear stale crash state.
+    setPreviewCrashed(false)
+    setLastPreviewError(null)
+  }, [previewUrl])
 
   useEffect(()=>{
     const asyncLoad = async () => {
@@ -230,6 +309,7 @@ function Editor() {
         <div className="state-container">
           <span style={{marginRight: "1em"}}>Container state: {containerState}</span>
           <span>Model state: {modelState}</span>
+          <span>Last preview error: {lastPreviewError ? lastPreviewError.kind : 'none'}</span>
           <label>
             <input
               type="checkbox"
@@ -246,10 +326,17 @@ function Editor() {
               />
             </div>
           )}
+          { previewCrashed ? <span>🛑 The preview crashed. We are trying to find out why....</span> : undefined}
+          { previewCrashed && lastPreviewError && lastPreviewError.message && (
+            <div className="error-message">
+              <strong>Error message:</strong> {lastPreviewError.message}
+            </div>
+          )}
         </div>
         <iframe
           title="Preview"
           className="preview-frame"
+          ref={previewFrameRef}
           src={previewUrl ?? undefined}
           srcDoc={previewUrl ? undefined : securePreviewDoc}
           sandbox="allow-scripts allow-same-origin"
