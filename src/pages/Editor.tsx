@@ -1,19 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { ContainerState } from "../utils/webcontainer";
 import "./Editor.css";
-import { ModelResponse } from "./models";
+import { ModelResponse } from "../utils/models";
 import { initialCode } from "./InitialContent";
 import { PreviewFrame, type PreviewError } from "../components/PreviewFrame";
+import { generateBundleFromCachedPrompt, ModelState } from "../utils/api";
 
-enum ModelState {
-  Ready = "ready",
-  Thinking = "thinking",
-  Error = "error",
-  Query = "query",
-}
 
 function Editor() {
   const { bundleId } = useParams<{ bundleId: string }>();
@@ -90,50 +85,23 @@ function Editor() {
 
   useEffect(() => {
     const asyncLoad = async () => {
-      const response = await fetch(`/api/bundle/${bundleId}`);
-      if (response.status === 404) {
-        const initialPrompt = localStorage.getItem("temp-prompt-cache") ?? "";
-        if (initialPrompt) {
+      if(!bundleId) return;
+      try {
+        const response = await fetch(`/api/bundle/${bundleId}`);
+        await response.body?.cancel(); // We only care about the status right now, so we can cancel the body stream to save resources
+        if(response.status === 404) {
           setModelState(ModelState.Thinking);
-          const modelResponse = await fetch(`/api/${bundleId}/prompt`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ promptText: initialPrompt }),
-          });
-          if (modelResponse.ok) {
-            const parsedResponse = ModelResponse.safeParse(
-              await modelResponse.json(),
-            );
-            if (parsedResponse.success) {
-              setCode(parsedResponse.data.jsx ?? initialCode);
-              setModelState(ModelState.Ready);
-            } else {
-              console.error(
-                "Failed to parse model response:",
-                parsedResponse.error,
-              );
-              setCode(initialCode);
-              setModelState(ModelState.Error);
-            }
-          } else {
-            console.error(
-              "Model generation request failed with status:",
-              modelResponse.status,
-            );
-            setCode(initialCode);
-            setModelState(ModelState.Error);
-          }
-        } else {
-          setCode(initialCode);
+          const modelResponse = await generateBundleFromCachedPrompt(bundleId);
+          setCode(modelResponse.jsx ?? initialCode);
+          if(modelResponse.explanation) setModelNotes([modelResponse.explanation]);
+          setModelState(ModelState.Ready);
         }
-      } else {
-        setCode(
-          "// Loading is not implemented yet, but we did find the bundle :)",
-        );
+      } catch(err) {
+        console.error("Unable to generate code");
+        setCode(initialCode);
+        setModelState(ModelState.Error);
       }
-    };
+    }
 
     asyncLoad().catch((error) => {
       console.error("Error loading bundle:", error);
@@ -153,13 +121,13 @@ function Editor() {
       <section
         className="editor-column"
         aria-label="JavaScript editor"
-        style={{ height: "50%", maxHeight: "400px", padding: "0.5em" }}
       >
         <CodeMirror
           value={code}
           height="100%"
           className={wrapLines ? "cm-wrap-lines" : undefined}
           extensions={extensions}
+          readOnly={modelState !== ModelState.Ready}
           onChange={codeDidChange}
         />
       </section>

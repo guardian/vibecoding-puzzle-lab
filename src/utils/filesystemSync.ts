@@ -62,6 +62,12 @@ export async function uploadFilesystem(
   return response
 }
 
+export enum DownloadState {
+  Downloaded = "downloaded",
+  NotFound = "not_found",
+  Error = "error",
+}
+
 /**
  * GETs a zip file from a webservice and unzips it into the WebContainer's filesystem
  * @param webContainer - The WebContainer instance
@@ -73,7 +79,7 @@ export async function downloadFilesystem(
   webContainer: WebContainer,
   serviceUrl: string,
   targetDir: string = '/'
-): Promise<void> {
+): Promise<DownloadState> {
   const fs = webContainer.fs
 
   // GET the zip from the webservice
@@ -81,8 +87,11 @@ export async function downloadFilesystem(
     method: 'GET',
   })
 
+  if(response.status === 404) return DownloadState.NotFound;
   if (!response.ok) {
-    throw new Error(`Failed to download filesystem: ${response.statusText}`)
+    const content = await response.text();
+    console.error(`Failed to download filesystem: ${response.status}`, content);
+    return DownloadState.Error;
   }
 
   const zipBlob = await response.blob()
@@ -116,4 +125,5 @@ export async function downloadFilesystem(
     // Write the file
     await fs.writeFile('/' + targetPath, content)
   }
+  return DownloadState.Downloaded;
 }
