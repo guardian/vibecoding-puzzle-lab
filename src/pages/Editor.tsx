@@ -129,13 +129,21 @@ function Editor() {
 
   useEffect(() => {
     function onPreviewMessage(event: MessageEvent) {
-      if (!previewFrameRef.current || event.source !== previewFrameRef.current.contentWindow) {
-        return
-      }
-
       const data = event.data
       if (!data || typeof data !== 'object') return
       if (data.source !== 'puzzle-lab-preview' || data.type !== 'preview-error') return
+
+      // Avoid strict event.source checks; iframe window identity can churn during HMR/reloads.
+      if (previewUrl) {
+        try {
+          const previewOrigin = new URL(previewUrl).origin
+          if (event.origin !== previewOrigin) {
+            return
+          }
+        } catch {
+          return
+        }
+      }
 
       const payload = data.payload
       if (!payload || typeof payload !== 'object') return
@@ -184,7 +192,7 @@ function Editor() {
     return () => {
       window.removeEventListener('message', onPreviewMessage)
     }
-  }, [])
+  }, [previewUrl])
 
   useEffect(()=>{
     const asyncDebug = async () => {
@@ -339,7 +347,7 @@ function Editor() {
       <section className="editor-column" aria-label="JavaScript editor">
         <CodeMirror
           value={code}
-          height="100%"
+          height="50%"
           className={wrapLines ? 'cm-wrap-lines' : undefined}
           extensions={extensions}
           onChange={codeDidChange}

@@ -112,6 +112,70 @@ async function pathExists(fs: FileSystemAPI, path: string): Promise<boolean> {
   }
 }
 
+function getPreviewIndexHtml() {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puzzle Lab Preview</title>
+    <script>
+      (function () {
+        function postPreviewError(payload) {
+          try {
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({ source: 'puzzle-lab-preview', type: 'preview-error', payload: payload }, '*')
+            }
+          } catch {
+            // Ignore cross-origin issues while reporting errors.
+          }
+        }
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target
+            if (target && target !== window) {
+              var tagName = target.tagName ? String(target.tagName) : 'unknown'
+              postPreviewError({
+                kind: 'dom-error',
+                tagName: tagName,
+                message: 'Resource failed to load: <' + tagName.toLowerCase() + '>',
+              })
+              return
+            }
+
+            postPreviewError({
+              kind: 'runtime-error',
+              message: event.message || 'Unknown runtime error',
+              fileName: event.filename || '',
+              lineNumber: event.lineno || 0,
+              columnNumber: event.colno || 0,
+              stack: event.error && event.error.stack ? String(event.error.stack) : '',
+            })
+          },
+          true,
+        )
+
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason
+          postPreviewError({
+            kind: 'unhandled-rejection',
+            message: reason instanceof Error ? reason.message : String(reason),
+            stack: reason instanceof Error && reason.stack ? reason.stack : '',
+          })
+        })
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+`
+}
+
 async function runCommand(
   container: WebContainer,
   command: string,
@@ -196,6 +260,9 @@ body {
 }
 `,
     );
+
+    await fs.writeFile('/app/index.html', getPreviewIndexHtml())
+
     if(progressFn) progressFn(7,7);
   })().catch((error) => {
     runtime.handles.projectInitialization = null
@@ -280,54 +347,8 @@ async function ensureDevServerRunning(
 }
 
 export async function writeRootFile(container: WebContainer, sourceCode: string) {
-  const errorBridge = `
-
-// Relay runtime and DOM errors to the parent app so the editor can surface iframe failures.
-const __puzzleLabPostError = (payload) => {
-  try {
-    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
-      window.parent.postMessage({ source: 'puzzle-lab-preview', type: 'preview-error', payload }, '*')
-    }
-  } catch {
-    // Ignore cross-origin access issues while reporting errors.
-  }
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (event) => {
-    const target = event.target
-    if (target && target !== window) {
-      const element = /** @type {Element} */ (target)
-      __puzzleLabPostError({
-        kind: 'dom-error',
-        tagName: element.tagName || 'unknown',
-        message: 'Resource failed to load: <' + String(element.tagName || 'unknown').toLowerCase() + '>',
-      })
-      return
-    }
-
-    __puzzleLabPostError({
-      kind: 'runtime-error',
-      message: event.message || 'Unknown runtime error',
-      fileName: event.filename || '',
-      lineNumber: event.lineno || 0,
-      columnNumber: event.colno || 0,
-      stack: event.error && event.error.stack ? String(event.error.stack) : '',
-    })
-  }, true)
-
-  window.addEventListener('unhandledrejection', (event) => {
-    const reason = event.reason
-    __puzzleLabPostError({
-      kind: 'unhandled-rejection',
-      message: reason instanceof Error ? reason.message : String(reason),
-      stack: reason instanceof Error && reason.stack ? reason.stack : '',
-    })
-  })
-}
-`
-
-  await container.fs.writeFile('/app/src/main.jsx', `${sourceCode}${errorBridge}`)
+  await container.fs.writeFile('/app/index.html', getPreviewIndexHtml())
+  await container.fs.writeFile('/app/src/main.jsx', sourceCode)
 }
 
 export async function acquireWebContainer(runtime: WebContainerRuntimeState): Promise<WebContainer> {
