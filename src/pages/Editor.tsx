@@ -192,13 +192,18 @@ function Editor() {
               />
             </div>
           )}
+          </div>
           <PreviewFrame
             code={code}
-            onPreviewError={() => setPreviewCrashed(true)}
+            onPreviewError={(e) => {
+              setPreviewCrashed(!!e)
+              setLastPreviewError(e);
+            }}
             setProgressBarValue={setProgressBarValue}
             setProgressBarTotal={setProgressBarTotal}
+            containerStateDidChange={setContainerState}
+            logsDidChange={(logs)=>setDevServerLogs(logs)}
           />
-        </div>
       </section>
     </main>
   );

@@ -12,9 +12,11 @@ import { securePreviewDoc } from "./InitialContent";
 
 interface PreviewFrameProps {
   code: string;
-  onPreviewError: (error: Error) => void;
+  onPreviewError: (error: PreviewError | null) => void;
   setProgressBarValue: (value: number) => void;
   setProgressBarTotal: (total: number) => void;
+  containerStateDidChange?: (state: ContainerState) => void;
+  logsDidChange?: (logs: string[]) => void;
 }
 
 export type PreviewError = {
@@ -32,6 +34,8 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
   onPreviewError,
   setProgressBarValue,
   setProgressBarTotal,
+  containerStateDidChange,
+  logsDidChange,
 }) => {
   const [previewCrashed, setPreviewCrashed] = useState(false);
   const [lastPreviewError, setLastPreviewError] = useState<PreviewError | null>(
@@ -46,6 +50,22 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
   const [containerState, setContainerState] = useState<ContainerState>(
     ContainerState.Booting,
   );
+
+  useEffect(() => {
+    if (containerStateDidChange) {
+      containerStateDidChange(containerState);
+    }
+  }, [containerState]);
+
+  useEffect(() => {
+    onPreviewError(lastPreviewError);
+  }, [lastPreviewError, onPreviewError]);
+
+  useEffect(() => {
+    if (logsDidChange) {
+      logsDidChange(devServerLogs);
+    }
+  }, [devServerLogs, logsDidChange]);
 
   function addDevServerLog(line: string) {
     if (!line) return;
@@ -210,7 +230,6 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
 
   return (
     <>
-      <div>
         {previewCrashed ? (
           <span>🛑 The preview crashed. We are trying to find out why....</span>
         ) : undefined}
@@ -219,7 +238,6 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
             <strong>Error message:</strong> {lastPreviewError.message}
           </div>
         )}
-      </div>
       <iframe
         title="Preview"
         className="preview-frame"
