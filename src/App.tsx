@@ -1,12 +1,12 @@
 import { Route, Routes } from 'react-router'
 import Index from './pages/Index'
-import Editor from './pages/Editor'
+import EngineerView from './pages/EngineerView'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/bundle/:bundleId" element={<Editor />} />
+      <Route path="/bundle/:bundleId" element={<EngineerView />} />
     </Routes>
   )
 }

@@ -1,3 +1,4 @@
+import type { PreviewError } from "../components/PreviewFrame";
 import { ModelResponse } from "./models";
 
 export enum ModelState {
@@ -41,4 +42,46 @@ export async function generateBundleFromScratch(bundleId: string, promptText: st
         );
         throw new Error(`Model generation failed with status ${modelResponse.status}`);
     }
+}
+
+export async function debugFault({
+    bundleId,
+    code,
+    lastPreviewError,
+    devServerLogs,
+}: {
+    bundleId: string;
+    code: string;
+    lastPreviewError: PreviewError | null;
+    devServerLogs: string[];
+}): Promise<ModelResponse> {
+    const modelResponse = await fetch(`/api/${bundleId}/debug`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsx: code,
+          lastError: lastPreviewError
+            ? `${lastPreviewError.kind}: ${lastPreviewError.message}`
+            : "No error information",
+          containerLogs: devServerLogs.join("\n"),
+        }),
+      });
+      if (modelResponse.ok) {
+        const parsedResponse = ModelResponse.safeParse(
+          await modelResponse.json(),
+        );
+        if (parsedResponse.success) {
+          return parsedResponse.data;
+        } else {
+          console.error(
+            "Failed to parse model response:",
+            parsedResponse.error,
+          );
+          throw new Error(`Failed to parse model response`);
+        }
+      } else {
+        throw new Error(`Model debug request failed with status: ${modelResponse.status}`);
+      }
 }

@@ -154,6 +154,7 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
 
   useEffect(() => {
     function onPreviewMessage(event: MessageEvent) {
+      console.log("onPreviewMessage", event);
       const data = event.data;
       if (!data || typeof data !== "object") return;
       if (data.source !== "puzzle-lab-preview" || data.type !== "preview-error")

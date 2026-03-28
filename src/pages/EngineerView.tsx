@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
-import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
 import { ContainerState } from "../utils/webcontainer";
 import "./Editor.css";
-import { ModelResponse } from "../utils/models";
 import { initialCode } from "./InitialContent";
 import { PreviewFrame, type PreviewError } from "../components/PreviewFrame";
-import { generateBundleFromCachedPrompt, ModelState } from "../utils/api";
+import { debugFault, generateBundleFromCachedPrompt, ModelState } from "../utils/api";
+import { Editor } from "../components/Editor";
 
-
-function Editor() {
+function EngineerView() {
   const { bundleId } = useParams<{ bundleId: string }>();
   const [code, setCode] = useState("");
   const [modelNotes, setModelNotes] = useState<string[]>([]);
@@ -24,52 +21,33 @@ function Editor() {
     null,
   );
   const [devServerLogs, setDevServerLogs] = useState<string[]>([]);
-  const extensions = useMemo(() => [javascript({ jsx: true })], []);
+
 
   const [progressBarValue, setProgressBarValue] = useState(0);
   const [progressBarTotal, setProgressBarTotal] = useState(0);
 
   useEffect(() => {
     const asyncDebug = async () => {
+      if(!bundleId) return;
       setModelState(ModelState.Thinking);
-      const modelResponse = await fetch(`/api/${bundleId}/debug`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          jsx: code,
-          lastError: lastPreviewError
-            ? `${lastPreviewError.kind}: ${lastPreviewError.message}`
-            : "No error information",
-          containerLogs: devServerLogs.join("\n"),
-        }),
-      });
-      if (modelResponse.ok) {
-        const parsedResponse = ModelResponse.safeParse(
-          await modelResponse.json(),
-        );
-        if (parsedResponse.success) {
-          setCode(parsedResponse.data.jsx ?? code);
-          if (parsedResponse.data.explanation)
-            setModelNotes((notes) => [
-              ...notes,
-              parsedResponse.data.explanation ?? "",
-            ]);
-          setModelState(ModelState.Ready);
-          setLastPreviewError(null);
-        } else {
-          console.error(
-            "Failed to parse model response:",
-            parsedResponse.error,
-          );
-          setModelState(ModelState.Error);
+      try {
+      const modelResponse = await debugFault({
+        bundleId,
+        lastPreviewError,
+        code,
+        devServerLogs,
+      })
+        setCode(modelResponse.jsx ?? code);
+        if (modelResponse.explanation) {
+          setModelNotes((notes) => [
+            ...notes,
+            modelResponse.explanation ?? "",
+          ]);
         }
-      } else {
-        console.error(
-          "Model debug request failed with status:",
-          modelResponse.status,
-        );
+        setModelState(ModelState.Ready);
+        setLastPreviewError(null);
+      } catch (err) {
+        console.error("Debugging failed:", err);
         setModelState(ModelState.Error);
       }
       setPreviewCrashed(false);
@@ -110,26 +88,21 @@ function Editor() {
     });
   }, [bundleId]);
 
-  const codeDidChange = (value: string) => {
-    //setCode(value);
-    const timeoutId = setTimeout(() => setCode(value), 500);
-    return () => clearTimeout(timeoutId);
-  };
 
+  //This callback must be memoised to prevent infinite loops in the useEffect that watches previewCrashed
+  const handlePreviewError = useCallback((e:PreviewError|null) => {
+    console.log(`onPreviewError`, e);
+    setPreviewCrashed(!!e)
+    setLastPreviewError(e);
+  }, []);
+  
   return (
     <main className="root-page">
       <section
         className="editor-column"
         aria-label="JavaScript editor"
       >
-        <CodeMirror
-          value={code}
-          height="100%"
-          className={wrapLines ? "cm-wrap-lines" : undefined}
-          extensions={extensions}
-          readOnly={modelState !== ModelState.Ready}
-          onChange={codeDidChange}
-        />
+        <Editor code={code} onChange={setCode} readOnly={modelState !== ModelState.Ready} wrapLines={wrapLines} />
       </section>
 
       <section className="preview-column" aria-label="Preview panel">
@@ -163,10 +136,7 @@ function Editor() {
           </div>
           <PreviewFrame
             code={code}
-            onPreviewError={(e) => {
-              setPreviewCrashed(!!e)
-              setLastPreviewError(e);
-            }}
+            onPreviewError={handlePreviewError}
             setProgressBarValue={setProgressBarValue}
             setProgressBarTotal={setProgressBarTotal}
             containerStateDidChange={setContainerState}
@@ -177,4 +147,4 @@ function Editor() {
   );
 }
 
-export default Editor;
+export default EngineerView;
