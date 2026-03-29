@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+
+.nx/cache
+.nx/workspace-data
+vite.config.*.timestamp*

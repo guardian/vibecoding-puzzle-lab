@@ -1,0 +1,48 @@
+{
+  "name": "server",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/server/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.json",
+        "cwd": "apps/server"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx src/local.ts",
+        "cwd": "apps/server"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node dist/local.js",
+        "cwd": "apps/server"
+      }
+    },
+    "lambda": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node dist/lambda.js",
+        "cwd": "apps/server"
+      }
+    },
+    "eslint:lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.json --noEmit",
+        "cwd": "apps/server"
+      }
+    }
+  },
+  "tags": []
+}
