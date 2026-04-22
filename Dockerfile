@@ -10,8 +10,8 @@ WORKDIR /app
 COPY . .
 
 RUN npx vite build --config apps/frontend/vite.config.ts --outDir /app/apps/frontend/dist
-RUN npx esbuild apps/server/src/local.ts --bundle --platform=node --format=esm --sourcemap --outfile=apps/server/dist/local.js
-RUN npx esbuild apps/server/src/lambda.ts --bundle --platform=node --format=esm --sourcemap --outfile=apps/server/dist/lambda.js
+RUN npx esbuild apps/server/src/local.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=apps/server/dist/local.js
+RUN npx esbuild apps/server/src/lambda.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=apps/server/dist/lambda.js
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -27,6 +27,7 @@ COPY --from=build /app/apps/frontend/dist /usr/share/nginx/html
 
 # Bundled Node server output.
 COPY --from=build /app/apps/server/dist /app/server
+COPY --from=deps /app/node_modules /app/node_modules
 
 # nginx and startup configuration.
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
