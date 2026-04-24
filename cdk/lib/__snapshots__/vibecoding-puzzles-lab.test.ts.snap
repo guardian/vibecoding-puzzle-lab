@@ -6,5 +6,103 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
     "gu:cdk:constructs": [],
     "gu:cdk:version": "TEST",
   },
+  "Resources": {
+    "IndexTableDA5422D9": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "state",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "lastModified",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "author",
+            "AttributeType": "S",
+          },
+        ],
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "idxStateDate",
+            "KeySchema": [
+              {
+                "AttributeName": "state",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "lastModified",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5,
+            },
+          },
+          {
+            "IndexName": "idxAuthorDate",
+            "KeySchema": [
+              {
+                "AttributeName": "author",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "lastModified",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5,
+            },
+          },
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5,
+        },
+        "TableName": "puzzle-lab-index-TEST",
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Retain",
+    },
+  },
 }
 `;

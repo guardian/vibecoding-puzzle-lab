@@ -32,6 +32,13 @@
         "cwd": "cdk"
       }
     },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/cdk.out"],
+      "options": {
+        "command": "nx run cdk:synth"
+      }
+    },
     "synth": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/cdk.out"],

@@ -104,7 +104,6 @@ jobs:
 
   build-cdk:
     name: Build CDK artifacts
-    if: ${{ hashFiles('cdk/package.json') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -118,19 +117,16 @@ jobs:
           cache: npm
           cache-dependency-path: cdk/package-lock.json
 
-      - name: Install CDK dependencies
-        working-directory: cdk
+      - name: Install dependencies
         run: npm ci
 
       - name: Run CDK tests
-        working-directory: cdk
-        run: npm test
+        run: npm run cdk:test
 
       - name: Synthesize CDK templates
         env:
           BUILD_NUMBER: ${{ github.run_number }}
-        working-directory: cdk
-        run: npm run synth
+        run: npm run cdk:synth
 
       - name: Store CDK artifacts
         uses: actions/upload-artifact@v4
