@@ -25,7 +25,11 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        env:
+          CI: '1'
+          NX_DAEMON: 'false'
+          NX_TUI: 'false'
+        run: npm test -- --verbose
 
   build:
     name: Build and push image (${{ matrix.arch }})
