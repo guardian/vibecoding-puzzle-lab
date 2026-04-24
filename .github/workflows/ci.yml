@@ -1,0 +1,167 @@
+name: Test, build and package
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test Node app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    name: Build and push image (${{ matrix.arch }})
+    needs: test
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-1
+          role-to-assume: ${{ secrets.GU_ECR_ROLE_ARN }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+        with:
+          mask-password: 'true'
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ matrix.arch }}-${{ github.run_number }}
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ env.REGISTRY }}/puzzle-lab:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-${{ matrix.arch }},mode=max
+          provenance: false
+
+  multiarch:
+    name: Create multi-arch manifest
+    needs: build
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-1
+          role-to-assume: ${{ secrets.GU_ECR_ROLE_ARN }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+        with:
+          mask-password: 'true'
+
+      - name: Create and push multi-arch manifest
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.run_number }}
+        run: |
+          docker buildx imagetools create --tag ${{ env.REGISTRY }}/puzzle-lab:${{ env.IMAGE_TAG }} \
+            ${{ env.REGISTRY }}/puzzle-lab:amd64-${{ github.run_number }} \
+            ${{ env.REGISTRY }}/puzzle-lab:arm64-${{ github.run_number }}
+
+  build-cdk:
+    name: Build CDK artifacts
+    if: ${{ hashFiles('cdk/package.json') != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cdk/package-lock.json
+
+      - name: Install CDK dependencies
+        working-directory: cdk
+        run: npm ci
+
+      - name: Run CDK tests
+        working-directory: cdk
+        run: npm test
+
+      - name: Synthesize CDK templates
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        working-directory: cdk
+        run: npm run synth
+
+      - name: Store CDK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk
+          path: cdk/cdk.out
+          retention-days: 5
+
+  deploy:
+    name: Deploy via Riff-Raff
+    needs:
+      - multiarch
+      - build-cdk
+    if: ${{ needs.build-cdk.result == 'success' }}
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/cdk
+          name: cdk
+
+      - uses: guardian/actions-riff-raff@v4
+        with:
+          roleArn: ${{ secrets.GU_RIFF_RAFF_ROLE_ARN }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          projectName: puzzle-lab
+          configPath: artifacts/cdk/riff-raff.yaml
+          contentDirectories: |
+            cdk.out:
+              - artifacts/cdk/**/*
