@@ -3,6 +3,8 @@ import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
+import { PuzzleInfoUpdate, PuzzleStates } from './dbmodels.js';
+import { listPuzzles, updatePuzzleInfo } from './dynamo.js';
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -196,6 +198,58 @@ export async function createApp(): Promise<Express> {
   });
 
 
+  app.get('/api/index', async (req: Request, res: Response) => {
+    const state = PuzzleStates.safeParse(req.query.state);
+    if(state.error) {
+      res.status(400).json({status: "error", detail: "invalid bundle state"});
+      return;
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    if(isNaN(limit)) {
+      res.status(400).json({status: "error", detail: "limit must be a number"});
+      return;
+    }
+
+    try {
+      const {results, continuationToken} = await listPuzzles(config["indexTable"], state.data, limit, req.query.cursor as string|undefined);
+      res.status(200).json({
+        status: "ok",
+        bundles: results,
+        cursor: continuationToken
+      });
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs"
+      });
+    }
+  });
+
+  app.put('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}, PuzzleInfoUpdate>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const updated = await updatePuzzleInfo(config["indexTable"], bundleId, req.body);
+      if(updated) {
+        res.status(200).json({
+          status: "ok",
+          updated,
+        })
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
+    }
+  });
 
   // Error handling middleware
   app.use((err: any, req: Request, res: Response, next: any) => {
