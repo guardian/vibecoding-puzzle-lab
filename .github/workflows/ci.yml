@@ -68,7 +68,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ env.REGISTRY }}/puzzle-lab:${{ env.IMAGE_TAG }}
+          tags: ${{ env.REGISTRY }}/vibecoding-puzzle-builder:${{ env.IMAGE_TAG }}
           cache-from: type=gha,scope=build-${{ matrix.arch }}
           cache-to: type=gha,scope=build-${{ matrix.arch }},mode=max
           provenance: false
@@ -98,9 +98,9 @@ jobs:
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.run_number }}
         run: |
-          docker buildx imagetools create --tag ${{ env.REGISTRY }}/puzzle-lab:${{ env.IMAGE_TAG }} \
-            ${{ env.REGISTRY }}/puzzle-lab:amd64-${{ github.run_number }} \
-            ${{ env.REGISTRY }}/puzzle-lab:arm64-${{ github.run_number }}
+          docker buildx imagetools create --tag ${{ env.REGISTRY }}/vibecoding-puzzle-builder:${{ env.IMAGE_TAG }} \
+            ${{ env.REGISTRY }}/vibecoding-puzzle-builder:amd64-${{ github.run_number }} \
+            ${{ env.REGISTRY }}/vibecoding-puzzle-builder:arm64-${{ github.run_number }}
 
   build-cdk:
     name: Build CDK artifacts

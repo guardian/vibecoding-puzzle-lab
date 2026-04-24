@@ -1,0 +1,52 @@
+{
+  "name": "cdk",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "cdk/lib",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --config jest.config.cjs",
+        "cwd": "cdk"
+      }
+    },
+    "test-update": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest -u --config jest.config.cjs",
+        "cwd": "cdk"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prettier --write \"{lib,bin}/**/*.ts\" --config prettier.config.cjs",
+        "cwd": "cdk"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint lib/** bin/** --no-error-on-unmatched-pattern",
+        "cwd": "cdk"
+      }
+    },
+    "synth": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/cdk.out"],
+      "options": {
+        "command": "cdk synth --path-metadata false --version-reporting false",
+        "cwd": "cdk"
+      }
+    },
+    "diff": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cdk diff --path-metadata false --version-reporting false",
+        "cwd": "cdk"
+      }
+    }
+  },
+  "tags": []
+}
