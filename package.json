@@ -50,7 +50,7 @@
     "@guardian/prettier": "5.0.0",
     "@guardian/tsconfig": "^1.0.1",
     "@jest/globals": "^29.7.0",
-    "@nx/esbuild": "^22.6.3",
+    "@nx/esbuild": "22.6.3",
     "@nx/eslint": "22.6.3",
     "@nx/jest": "22.6.3",
     "@nx/vite": "22.6.3",
