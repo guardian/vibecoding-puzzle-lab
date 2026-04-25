@@ -46,7 +46,11 @@ function sanitizePromptText(promptText: string): string {
 export async function createApp(): Promise<Express> {
   const app = express();
 
-  const config = await getConfig('/DEV/playground/puzzle-lab/');
+  const stage = process.env.STAGE || 'DEV';
+  const stack = process.env.STACK || 'playground';
+  const appName = process.env.APP || 'puzzle-lab';
+
+  const config = await getConfig('/${stage}/${stack}/${appName}');
   console.log("Loaded config:", config);
   
   // Middleware

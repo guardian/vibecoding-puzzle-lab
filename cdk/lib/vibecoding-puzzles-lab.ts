@@ -21,6 +21,8 @@ export class VibecodingPuzzlesLab extends GuStack {
     super(scope, id, props);
 
     const app = "vibecoding-puzzles-lab";
+    const bedrockInferenceProfile = "eu.anthropic.claude-sonnet-4-5-20250929-v1:0";
+    const bedrockModelId = "claude-sonnet-4-5-20250929-v1";
 
     const domainName = props.stage==="PROD" ? "puzzle-vibes.gutools.co.uk" : 
       `puzzle-vibes-${props.stage.toLowerCase()}.dev-gutools.co.uk`;
@@ -65,7 +67,7 @@ export class VibecodingPuzzlesLab extends GuStack {
     });
 
     new StringParameter(this, "IndexTableNameParam", {
-      parameterName: `/${this.stage}/${this.stack}/${app}/index-table-name`,
+      parameterName: `/${this.stage}/${this.stack}/${app}/indexTable`,
       stringValue: indexTable.tableName,
     });
 
@@ -76,8 +78,13 @@ export class VibecodingPuzzlesLab extends GuStack {
     });
 
     new StringParameter(this, "BundlesBucketNameParam", {
-      parameterName: `/${this.stage}/${this.stack}/${app}/bundles-bucket-name`,
+      parameterName: `/${this.stage}/${this.stack}/${app}/s3_bucket`,
       stringValue: bundlesBucket.bucketName,
+    });
+
+    new StringParameter(this, "BedrockInferenceProfile", {
+      parameterName: `/${this.stage}/${this.stack}/${app}/bedrock_model_id`,
+      stringValue: bedrockInferenceProfile,
     });
 
     const vpcId = new GuParameter(this, "VpcId", {
@@ -144,7 +151,18 @@ export class VibecodingPuzzlesLab extends GuStack {
               resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}/*`],
             }),
           ]
-        })
+        }),
+        bedrockAccess: new PolicyDocument({
+          statements: [
+            new PolicyStatement({
+              actions: ["bedrock:InvokeModel"],
+              resources: [
+                `arn:aws:bedrock:${this.region}::model/${bedrockModelId}`, 
+                `arn:aws:bedrock:${this.region}::inference-profile/${bedrockInferenceProfile}`
+              ],
+            }),
+          ]
+        }),
       }
     });
 
