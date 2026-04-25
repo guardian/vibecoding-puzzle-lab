@@ -18,7 +18,8 @@ WORKDIR /app
 
 # Install nginx from Alpine package repositories.
 RUN apk add --no-cache nginx
-
+RUN rm -f /var/log/nginx/* && ln -s /dev/stdout /var/log/nginx/access.log && ln -s /dev/stderr /var/log/nginx/error.log
+RUN rm -rf /run/nginx && mkdir -p /run && ln -s /var/lib/nginx/tmp /run/nginx
 ENV NODE_ENV=production
 ENV PORT=3000
 
@@ -33,7 +34,8 @@ COPY --from=deps /app/node_modules /app/node_modules
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
-
+RUN adduser -D -H appuser
+USER appuser
 EXPOSE 80
 
 CMD ["/usr/local/bin/start.sh"]
