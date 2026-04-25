@@ -35,7 +35,7 @@ COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 RUN adduser -D -H appuser
-USER appuser
+
 EXPOSE 80
 
 CMD ["/usr/local/bin/start.sh"]

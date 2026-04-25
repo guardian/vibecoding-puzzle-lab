@@ -8,7 +8,7 @@ mkdir -p /var/lib/nginx/modules
 mkdir -p /var/lib/nginx/run
 mkdir -p /var/lib/nginx/tmp
 
-node /app/server/local.js &
+su appuser -c "node /app/server/local.js" &
 node_pid="$!"
 
 trap 'kill -TERM "$node_pid" 2>/dev/null || true' INT TERM
