@@ -39,7 +39,7 @@ export class VibecodingPuzzlesLab extends GuStack {
         name: "id",
         type: AttributeType.STRING,
       },
-      tableName: `puzzle-lab-index-${this.stage}`,
+      //tableName: `puzzle-lab-index-${this.stage}`,
     });
     indexTable.addGlobalSecondaryIndex({
       indexName: "idxStateDate",
@@ -204,7 +204,7 @@ export class VibecodingPuzzlesLab extends GuStack {
       sourceVolume: "nginx-temp",
       readOnly: false,
     });
-    
+
     const svc = new ApplicationLoadBalancedFargateService(this, "Service", {
       certificate,
       serviceName: `puzzle-vibes-${this.stage}`,

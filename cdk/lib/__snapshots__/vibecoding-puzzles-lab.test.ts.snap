@@ -427,7 +427,6 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
           "ReadCapacityUnits": 5,
           "WriteCapacityUnits": 5,
         },
-        "TableName": "puzzle-lab-index-TEST",
         "Tags": [
           {
             "Key": "gu:cdk:version",
