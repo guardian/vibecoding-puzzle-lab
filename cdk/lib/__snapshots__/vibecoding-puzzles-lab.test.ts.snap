@@ -899,6 +899,13 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
               },
             },
             "Memory": 1024,
+            "MountPoints": [
+              {
+                "ContainerPath": "/var/lib/nginx",
+                "ReadOnly": false,
+                "SourceVolume": "nginx-temp",
+              },
+            ],
             "Name": "webapp",
             "PortMappings": [
               {
@@ -946,6 +953,11 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
             "Arn",
           ],
         },
+        "Volumes": [
+          {
+            "Name": "nginx-temp",
+          },
+        ],
       },
       "Type": "AWS::ECS::TaskDefinition",
     },
