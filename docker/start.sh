@@ -1,6 +1,13 @@
 #!/bin/sh
 set -eu
 
+# In the container enironvment, /var/lib/nginx is a tmp mount. Create the necessary directories so nginx can start up.
+mkdir -p /var/lib/nginx/html
+mkdir -p /var/lib/nginx/logs
+mkdir -p /var/lib/nginx/modules
+mkdir -p /var/lib/nginx/run
+mkdir -p /var/lib/nginx/tmp
+
 node /app/server/local.js &
 node_pid="$!"
 
