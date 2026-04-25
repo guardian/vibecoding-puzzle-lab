@@ -163,4 +163,5 @@ jobs:
           configPath: artifacts/cdk/riff-raff.yaml
           contentDirectories: |
             cdk.out:
-              - artifacts/cdk/**/*
+              - artifacts/cdk/VibecodingPuzzlesLab-euwest-1-CODE.template.json
+              - artifacts/cdk/VibecodingPuzzlesLab-euwest-1-PROD.template.json
