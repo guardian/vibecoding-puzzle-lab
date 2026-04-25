@@ -50,7 +50,7 @@ export async function createApp(): Promise<Express> {
   const stack = process.env.STACK || 'playground';
   const appName = process.env.APP || 'puzzle-lab';
 
-  const config = await getConfig('/${stage}/${stack}/${appName}');
+  const config = await getConfig(`/${stage}/${stack}/${appName}`);
   console.log("Loaded config:", config);
   
   // Middleware

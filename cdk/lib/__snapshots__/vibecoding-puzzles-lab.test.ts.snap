@@ -645,7 +645,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
     "ServiceLBPublicListenerECSGroup0CC8688C": {
       "Properties": {
         "HealthCheckIntervalSeconds": 10,
-        "HealthCheckPath": "/healthcheck",
+        "HealthCheckPath": "/health",
         "HealthCheckTimeoutSeconds": 5,
         "HealthyThresholdCount": 2,
         "Matcher": {

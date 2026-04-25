@@ -229,7 +229,7 @@ export class VibecodingPuzzlesLab extends GuStack {
     });
 
     svc.targetGroup.configureHealthCheck({
-      path: "/healthcheck",
+      path: "/health",
       healthyHttpCodes: "200",
       interval: Duration.seconds(10),
       timeout: Duration.seconds(5),
