@@ -1180,22 +1180,40 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                     "ssm:ListParameters",
                   ],
                   "Effect": "Allow",
-                  "Resource": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:ssm:",
-                        {
-                          "Ref": "AWS::Region",
-                        },
-                        ":",
-                        {
-                          "Ref": "AWS::AccountId",
-                        },
-                        ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab",
+                        ],
                       ],
-                    ],
-                  },
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                        ],
+                      ],
+                    },
+                  ],
                 },
               ],
               "Version": "2012-10-17",

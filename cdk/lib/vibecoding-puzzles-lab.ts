@@ -148,7 +148,10 @@ export class VibecodingPuzzlesLab extends GuStack {
           statements: [
             new PolicyStatement({
               actions: ["ssm:GetParameter","ssm:GetParameters","ssm:GetParametersByPath","ssm:ListParameters"],
-              resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}/*`],
+              resources: [
+                `arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}`,
+                `arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}/*`
+              ],
             }),
           ]
         }),
