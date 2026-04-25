@@ -159,7 +159,7 @@ jobs:
         with:
           roleArn: ${{ secrets.GU_RIFF_RAFF_ROLE_ARN }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          projectName: puzzle-lab
+          projectName: playground::vibecoding-puzzle-lab
           configPath: artifacts/cdk/riff-raff.yaml
           contentDirectories: |
             cdk.out:
