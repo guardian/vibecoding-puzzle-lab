@@ -904,6 +904,11 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                 "ReadOnly": false,
                 "SourceVolume": "nginx-temp",
               },
+              {
+                "ContainerPath": "/var/log/nginx",
+                "ReadOnly": false,
+                "SourceVolume": "nginx-log",
+              },
             ],
             "Name": "webapp",
             "PortMappings": [
@@ -955,6 +960,9 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         "Volumes": [
           {
             "Name": "nginx-temp",
+          },
+          {
+            "Name": "nginx-log",
           },
         ],
       },

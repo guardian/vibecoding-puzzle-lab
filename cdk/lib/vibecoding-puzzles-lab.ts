@@ -199,9 +199,17 @@ export class VibecodingPuzzlesLab extends GuStack {
       name: "nginx-temp"
     });
 
+    taskDefinition.addVolume({
+      name: "nginx-log"
+    });
+
     container.addMountPoints({
       containerPath: "/var/lib/nginx",
       sourceVolume: "nginx-temp",
+      readOnly: false,
+    },{
+      containerPath: "/var/log/nginx",
+      sourceVolume: "nginx-log",
       readOnly: false,
     });
 
