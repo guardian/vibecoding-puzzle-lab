@@ -272,7 +272,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
           "aws.cognito.signin.user.admin",
         ],
         "CallbackURLs": [
-          "https://gutools.co.uk/oauth2/idpresponse",
+          "https://puzzle-vibes-test.dev-gutools.co.uk/oauth2/idpresponse",
         ],
         "GenerateSecret": true,
         "IdTokenValidity": 60,
@@ -1297,7 +1297,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         },
         "Environment": {
           "Variables": {
-            "ALLOWED_GROUPS": "",
+            "ALLOWED_GROUPS": "engineering@guardian.co.uk",
             "APP": "vibecoding-puzzles-lab",
             "GATEKEEPER_FUNCTION_ARN": {
               "Fn::Join": [

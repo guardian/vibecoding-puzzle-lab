@@ -246,8 +246,8 @@ export class VibecodingPuzzlesLab extends GuStack {
       app,
       vpc,
       googleAuth: {
-        domain: "gutools.co.uk",  //FIXME: check correct value
-        allowedGroups: [""],
+        domain: domainName,
+        allowedGroups: ["engineering@guardian.co.uk"],
       }
     });
     
