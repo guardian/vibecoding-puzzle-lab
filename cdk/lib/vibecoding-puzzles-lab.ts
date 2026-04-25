@@ -180,7 +180,7 @@ export class VibecodingPuzzlesLab extends GuStack {
       memoryLimitMiB: 1024,
     });
 
-    taskDefinition.addContainer("webapp", {
+    const container = taskDefinition.addContainer("webapp", {
       image,
       cpu: 512,
       memoryLimitMiB: 1024,
@@ -195,6 +195,16 @@ export class VibecodingPuzzlesLab extends GuStack {
       portMappings: [{containerPort: 80, protocol: Protocol.TCP}]
     });
 
+    taskDefinition.addVolume({
+      name: "nginx-temp"
+    });
+
+    container.addMountPoints({
+      containerPath: "/var/lib/nginx",
+      sourceVolume: "nginx-temp",
+      readOnly: false,
+    });
+    
     const svc = new ApplicationLoadBalancedFargateService(this, "Service", {
       certificate,
       serviceName: `puzzle-vibes-${this.stage}`,
