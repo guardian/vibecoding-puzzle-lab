@@ -427,7 +427,6 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
           "ReadCapacityUnits": 5,
           "WriteCapacityUnits": 5,
         },
-        "TableName": "puzzle-lab-index-TEST",
         "Tags": [
           {
             "Key": "gu:cdk:version",
@@ -646,7 +645,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
     "ServiceLBPublicListenerECSGroup0CC8688C": {
       "Properties": {
         "HealthCheckIntervalSeconds": 10,
-        "HealthCheckPath": "/healthcheck",
+        "HealthCheckPath": "/health",
         "HealthCheckTimeoutSeconds": 5,
         "HealthyThresholdCount": 2,
         "Matcher": {
@@ -905,6 +904,11 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                 "ReadOnly": false,
                 "SourceVolume": "nginx-temp",
               },
+              {
+                "ContainerPath": "/var/log/nginx",
+                "ReadOnly": false,
+                "SourceVolume": "nginx-log",
+              },
             ],
             "Name": "webapp",
             "PortMappings": [
@@ -956,6 +960,9 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         "Volumes": [
           {
             "Name": "nginx-temp",
+          },
+          {
+            "Name": "nginx-log",
           },
         ],
       },
@@ -1173,22 +1180,40 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                     "ssm:ListParameters",
                   ],
                   "Effect": "Allow",
-                  "Resource": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:ssm:",
-                        {
-                          "Ref": "AWS::Region",
-                        },
-                        ":",
-                        {
-                          "Ref": "AWS::AccountId",
-                        },
-                        ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab",
+                        ],
                       ],
-                    ],
-                  },
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                        ],
+                      ],
+                    },
+                  ],
                 },
               ],
               "Version": "2012-10-17",

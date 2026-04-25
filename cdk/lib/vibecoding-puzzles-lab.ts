@@ -39,7 +39,7 @@ export class VibecodingPuzzlesLab extends GuStack {
         name: "id",
         type: AttributeType.STRING,
       },
-      tableName: `puzzle-lab-index-${this.stage}`,
+      //tableName: `puzzle-lab-index-${this.stage}`,
     });
     indexTable.addGlobalSecondaryIndex({
       indexName: "idxStateDate",
@@ -148,7 +148,10 @@ export class VibecodingPuzzlesLab extends GuStack {
           statements: [
             new PolicyStatement({
               actions: ["ssm:GetParameter","ssm:GetParameters","ssm:GetParametersByPath","ssm:ListParameters"],
-              resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}/*`],
+              resources: [
+                `arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}`,
+                `arn:aws:ssm:${this.region}:${this.account}:parameter/${this.stage}/${this.stack}/${app}/*`
+              ],
             }),
           ]
         }),
@@ -199,12 +202,20 @@ export class VibecodingPuzzlesLab extends GuStack {
       name: "nginx-temp"
     });
 
+    taskDefinition.addVolume({
+      name: "nginx-log"
+    });
+
     container.addMountPoints({
       containerPath: "/var/lib/nginx",
       sourceVolume: "nginx-temp",
       readOnly: false,
+    },{
+      containerPath: "/var/log/nginx",
+      sourceVolume: "nginx-log",
+      readOnly: false,
     });
-    
+
     const svc = new ApplicationLoadBalancedFargateService(this, "Service", {
       certificate,
       serviceName: `puzzle-vibes-${this.stage}`,
@@ -221,7 +232,7 @@ export class VibecodingPuzzlesLab extends GuStack {
     });
 
     svc.targetGroup.configureHealthCheck({
-      path: "/healthcheck",
+      path: "/health",
       healthyHttpCodes: "200",
       interval: Duration.seconds(10),
       timeout: Duration.seconds(5),
