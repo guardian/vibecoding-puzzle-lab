@@ -1106,24 +1106,33 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
               "Statement": [
                 {
                   "Action": [
+                    "s3:ListBucket",
                     "s3:GetObject",
                     "s3:PutObject",
                   ],
                   "Effect": "Allow",
-                  "Resource": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        {
-                          "Fn::GetAtt": [
-                            "BundlesBucket4FD5E753",
-                            "Arn",
-                          ],
-                        },
-                        "/*",
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "BundlesBucket4FD5E753",
+                        "Arn",
                       ],
-                    ],
-                  },
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "BundlesBucket4FD5E753",
+                              "Arn",
+                            ],
+                          },
+                          "/*",
+                        ],
+                      ],
+                    },
+                  ],
                 },
               ],
               "Version": "2012-10-17",

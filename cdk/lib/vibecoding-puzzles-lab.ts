@@ -131,8 +131,8 @@ export class VibecodingPuzzlesLab extends GuStack {
         bucketAccess: new PolicyDocument({
           statements: [
             new PolicyStatement({
-              actions: ["s3:GetObject", "s3:PutObject"],
-              resources: [bundlesBucket.bucketArn + "/*"],
+              actions: ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
+              resources: [bundlesBucket.bucketArn, bundlesBucket.bucketArn + "/*"],
             }),
           ]
         }),
