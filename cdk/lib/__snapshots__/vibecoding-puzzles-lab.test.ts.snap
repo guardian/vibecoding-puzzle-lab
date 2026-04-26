@@ -88,6 +88,28 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
       "DeletionPolicy": "Retain",
       "Properties": {
         "BucketName": "puzzle-vibes-test",
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*",
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "PUT",
+                "POST",
+              ],
+              "AllowedOrigins": [
+                "https://puzzle-vibes-test.dev-gutools.co.uk",
+              ],
+              "ExposedHeaders": [
+                "ETag",
+                "x-amz-version-id",
+              ],
+            },
+          ],
+        },
         "Tags": [
           {
             "Key": "gu:cdk:version",
@@ -1106,24 +1128,33 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
               "Statement": [
                 {
                   "Action": [
+                    "s3:ListBucket",
                     "s3:GetObject",
                     "s3:PutObject",
                   ],
                   "Effect": "Allow",
-                  "Resource": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        {
-                          "Fn::GetAtt": [
-                            "BundlesBucket4FD5E753",
-                            "Arn",
-                          ],
-                        },
-                        "/*",
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "BundlesBucket4FD5E753",
+                        "Arn",
                       ],
-                    ],
-                  },
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "BundlesBucket4FD5E753",
+                              "Arn",
+                            ],
+                          },
+                          "/*",
+                        ],
+                      ],
+                    },
+                  ],
                 },
               ],
               "Version": "2012-10-17",
@@ -1227,6 +1258,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                   "Action": "bedrock:InvokeModel",
                   "Effect": "Allow",
                   "Resource": [
+                    "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                     {
                       "Fn::Join": [
                         "",
@@ -1235,19 +1267,11 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                           {
                             "Ref": "AWS::Region",
                           },
-                          "::model/claude-sonnet-4-5-20250929-v1",
-                        ],
-                      ],
-                    },
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:bedrock:",
+                          ":",
                           {
-                            "Ref": "AWS::Region",
+                            "Ref": "AWS::AccountId",
                           },
-                          "::inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                          ":inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                         ],
                       ],
                     },

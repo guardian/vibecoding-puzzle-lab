@@ -12,7 +12,7 @@ import { PolicyDocument, PolicyStatement, ServicePrincipal } from "aws-cdk-lib/a
 import { ApplicationProtocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { AttributeType, ProjectionType, Table } from "aws-cdk-lib/aws-dynamodb";
-import { Bucket } from "aws-cdk-lib/aws-s3";
+import { Bucket, HttpMethods } from "aws-cdk-lib/aws-s3";
 import process from "node:process";
 import { CognitoGatekeeper } from "./cognito-gatekeeper";
 
@@ -22,7 +22,7 @@ export class VibecodingPuzzlesLab extends GuStack {
 
     const app = "vibecoding-puzzles-lab";
     const bedrockInferenceProfile = "eu.anthropic.claude-sonnet-4-5-20250929-v1:0";
-    const bedrockModelId = "claude-sonnet-4-5-20250929-v1";
+    const bedrockModelId = "anthropic.claude-sonnet-4-5-20250929-v1:0";
 
     const domainName = props.stage==="PROD" ? "puzzle-vibes.gutools.co.uk" : 
       `puzzle-vibes-${props.stage.toLowerCase()}.dev-gutools.co.uk`;
@@ -75,6 +75,12 @@ export class VibecodingPuzzlesLab extends GuStack {
       bucketName: `puzzle-vibes-${this.stage.toLowerCase()}`,
       publicReadAccess: false,
       versioned: true,
+      cors: [{
+        allowedHeaders: ["*"],
+        allowedMethods: [HttpMethods.GET, HttpMethods.HEAD, HttpMethods.PUT, HttpMethods.POST],
+        allowedOrigins: [`https://${domainName}`],
+        exposedHeaders: ["ETag", "x-amz-version-id"],
+      }]
     });
 
     new StringParameter(this, "BundlesBucketNameParam", {
@@ -127,12 +133,11 @@ export class VibecodingPuzzlesLab extends GuStack {
     const taskRole = new GuRole(this, "TaskRole", {
       assumedBy: new ServicePrincipal("ecs-tasks.amazonaws.com"),
       inlinePolicies: {
-        // TODO: bedrock
         bucketAccess: new PolicyDocument({
           statements: [
             new PolicyStatement({
-              actions: ["s3:GetObject", "s3:PutObject"],
-              resources: [bundlesBucket.bucketArn + "/*"],
+              actions: ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
+              resources: [bundlesBucket.bucketArn, bundlesBucket.bucketArn + "/*"],
             }),
           ]
         }),
@@ -160,8 +165,8 @@ export class VibecodingPuzzlesLab extends GuStack {
             new PolicyStatement({
               actions: ["bedrock:InvokeModel"],
               resources: [
-                `arn:aws:bedrock:${this.region}::model/${bedrockModelId}`, 
-                `arn:aws:bedrock:${this.region}::inference-profile/${bedrockInferenceProfile}`
+                `arn:aws:bedrock:*::foundation-model/${bedrockModelId}`, 
+                `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${bedrockInferenceProfile}`
               ],
             }),
           ]
