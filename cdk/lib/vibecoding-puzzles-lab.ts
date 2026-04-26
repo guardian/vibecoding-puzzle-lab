@@ -133,7 +133,6 @@ export class VibecodingPuzzlesLab extends GuStack {
     const taskRole = new GuRole(this, "TaskRole", {
       assumedBy: new ServicePrincipal("ecs-tasks.amazonaws.com"),
       inlinePolicies: {
-        // TODO: bedrock
         bucketAccess: new PolicyDocument({
           statements: [
             new PolicyStatement({
@@ -166,8 +165,8 @@ export class VibecodingPuzzlesLab extends GuStack {
             new PolicyStatement({
               actions: ["bedrock:InvokeModel"],
               resources: [
-                `arn:aws:bedrock:${this.region}::model/${bedrockModelId}`, 
-                `arn:aws:bedrock:${this.region}::inference-profile/${bedrockInferenceProfile}`
+                `arn:aws:bedrock:*::model/${bedrockModelId}`, 
+                `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${bedrockInferenceProfile}`
               ],
             }),
           ]

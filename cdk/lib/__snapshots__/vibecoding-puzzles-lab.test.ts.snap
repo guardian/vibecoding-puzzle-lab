@@ -1258,6 +1258,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                   "Action": "bedrock:InvokeModel",
                   "Effect": "Allow",
                   "Resource": [
+                    "arn:aws:bedrock:*::model/claude-sonnet-4-5-20250929-v1",
                     {
                       "Fn::Join": [
                         "",
@@ -1266,19 +1267,11 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                           {
                             "Ref": "AWS::Region",
                           },
-                          "::model/claude-sonnet-4-5-20250929-v1",
-                        ],
-                      ],
-                    },
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:bedrock:",
+                          ":",
                           {
-                            "Ref": "AWS::Region",
+                            "Ref": "AWS::AccountId",
                           },
-                          "::inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                          ":inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                         ],
                       ],
                     },
