@@ -88,6 +88,28 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
       "DeletionPolicy": "Retain",
       "Properties": {
         "BucketName": "puzzle-vibes-test",
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*",
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "PUT",
+                "POST",
+              ],
+              "AllowedOrigins": [
+                "https://puzzle-vibes-test.dev-gutools.co.uk",
+              ],
+              "ExposedHeaders": [
+                "ETag",
+                "x-amz-version-id",
+              ],
+            },
+          ],
+        },
         "Tags": [
           {
             "Key": "gu:cdk:version",

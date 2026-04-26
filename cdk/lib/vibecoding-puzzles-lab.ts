@@ -12,7 +12,7 @@ import { PolicyDocument, PolicyStatement, ServicePrincipal } from "aws-cdk-lib/a
 import { ApplicationProtocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { AttributeType, ProjectionType, Table } from "aws-cdk-lib/aws-dynamodb";
-import { Bucket } from "aws-cdk-lib/aws-s3";
+import { Bucket, HttpMethods } from "aws-cdk-lib/aws-s3";
 import process from "node:process";
 import { CognitoGatekeeper } from "./cognito-gatekeeper";
 
@@ -75,6 +75,12 @@ export class VibecodingPuzzlesLab extends GuStack {
       bucketName: `puzzle-vibes-${this.stage.toLowerCase()}`,
       publicReadAccess: false,
       versioned: true,
+      cors: [{
+        allowedHeaders: ["*"],
+        allowedMethods: [HttpMethods.GET, HttpMethods.HEAD, HttpMethods.PUT, HttpMethods.POST],
+        allowedOrigins: [`https://${domainName}`],
+        exposedHeaders: ["ETag", "x-amz-version-id"],
+      }]
     });
 
     new StringParameter(this, "BundlesBucketNameParam", {
