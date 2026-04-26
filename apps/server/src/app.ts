@@ -58,6 +58,12 @@ export async function createApp(): Promise<Express> {
     })
   );
 
+  // Middleware to set CSP
+  // app.use((req, res, next) => {
+  //   res.setHeader("Content-Security-Policy", "img-src 'self'; style-src 'self'; font-src 'self';");
+  //   next();
+  // });
+
   // Health check endpoint
   app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
