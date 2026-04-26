@@ -60,13 +60,6 @@ export async function createApp(): Promise<Express> {
     })
   );
 
-  // Middleware to set cross-origin isolation
-  app.use((req, res, next) => {
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-    next();
-  });
-
   // Middleware to set CSP
   // app.use((req, res, next) => {
   //   res.setHeader("Content-Security-Policy", "img-src 'self'; style-src 'self'; font-src 'self';");
