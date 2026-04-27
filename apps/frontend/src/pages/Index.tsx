@@ -1,13 +1,38 @@
 import { useNavigate } from "react-router";
 import { useState } from "react";
+import { CreatePuzzleResponse } from "@puzzle-lab/common-lib";
+
 function Index() {
   const nav = useNavigate();
   const [textContent, setTextContent] = useState("");
 
   const handleLetsDoIt = async () => {
     localStorage.setItem('temp-prompt-cache', textContent);
-    const newUuid = crypto.randomUUID();
-    nav(`/bundle/${newUuid}/editor`);
+    
+    try {
+      const userInfoResponse = await fetch("/api/whoami");
+      const userInfo = await userInfoResponse.json();
+      console.log(userInfo);
+
+      const createResponse = await fetch("/api/bundle/new", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: "New puzzle" }),
+      });
+      if(createResponse.status !== 201) {
+        console.error("Failed to create puzzle, status code:", createResponse.status);
+        console.error(await createResponse.text());
+        throw new Error(`server rejected request: ${createResponse.status}`);
+      }
+
+      const result = await CreatePuzzleResponse.parse(await createResponse.json());
+      nav(`/bundle/${result.id}/editor`);
+    } catch (error) {
+      console.error("Error creating puzzle: ", error);
+      alert("Failed to create puzzle. Please see the console log");
+    }
   }
 
   return (
