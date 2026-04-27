@@ -44,7 +44,11 @@ function sanitizePromptText(promptText: string): string {
 export async function createApp(): Promise<Express> {
   const app = express();
 
-  const config = await getConfig('/DEV/playground/puzzle-lab/');
+  const stage = process.env.STAGE || 'DEV';
+  const stack = process.env.STACK || 'playground';
+  const appName = process.env.APP || 'puzzle-lab';
+
+  const config = await getConfig(`/${stage}/${stack}/${appName}`);
   console.log("Loaded config:", config);
   
   // Middleware
@@ -53,6 +57,12 @@ export async function createApp(): Promise<Express> {
       type: ['application/json', 'application/*+json', 'text/json'],
     })
   );
+
+  // Middleware to set CSP
+  // app.use((req, res, next) => {
+  //   res.setHeader("Content-Security-Policy", "img-src 'self'; style-src 'self'; font-src 'self';");
+  //   next();
+  // });
 
   // Health check endpoint
   app.get('/api/health', (req: Request, res: Response) => {

@@ -3,10 +3,379 @@
 exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
 {
   "Metadata": {
-    "gu:cdk:constructs": [],
+    "gu:cdk:constructs": [
+      "GuCertificate",
+      "GuParameter",
+      "GuParameter",
+      "GuParameter",
+      "GuParameter",
+      "GuRole",
+      "GuLambdaFunction",
+      "GuHttpsEgressSecurityGroup",
+      "GuCname",
+    ],
     "gu:cdk:version": "TEST",
   },
+  "Outputs": {
+    "ServiceLoadBalancerDNSEC5B149E": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ServiceLBE9A1ADBC",
+          "DNSName",
+        ],
+      },
+    },
+    "ServiceServiceURL250C0FB6": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Fn::GetAtt": [
+                "ServiceLBE9A1ADBC",
+                "DNSName",
+              ],
+            },
+          ],
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "VpcAZParam": {
+      "Default": "/account/vpc/primary/availability-zones",
+      "Type": "AWS::SSM::Parameter::Value<List<String>>",
+    },
+    "VpcId": {
+      "Default": "/account/vpc/primary/id",
+      "Description": "The VPC to deploy the structuriser to",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+    "VpcPrivateParam": {
+      "Default": "/account/vpc/primary/subnets/private",
+      "Type": "AWS::SSM::Parameter::Value<List<String>>",
+    },
+    "VpcPublicParam": {
+      "Default": "/account/vpc/primary/subnets/public",
+      "Type": "AWS::SSM::Parameter::Value<List<String>>",
+    },
+    "bucketoverrideParameter": {
+      "Default": "/organisation/services/artifact.bucket",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+    "deploytoolsaccountidparameterParameter": {
+      "Default": "/organisation/accounts/deployTools",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
   "Resources": {
+    "BedrockInferenceProfileD2A140DC": {
+      "Properties": {
+        "Name": "/TEST/playground/vibecoding-puzzles-lab/bedrock_model_id",
+        "Tags": {
+          "Stack": "playground",
+          "Stage": "TEST",
+          "gu:cdk:version": "TEST",
+          "gu:repo": "guardian/vibecoding-puzzle-lab",
+        },
+        "Type": "String",
+        "Value": "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "BundlesBucket4FD5E753": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketName": "puzzle-vibes-test",
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*",
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "PUT",
+                "POST",
+              ],
+              "AllowedOrigins": [
+                "https://puzzle-vibes-test.dev-gutools.co.uk",
+              ],
+              "ExposedHeaders": [
+                "ETag",
+                "x-amz-version-id",
+              ],
+            },
+          ],
+        },
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled",
+        },
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "BundlesBucketNameParam5AEF513D": {
+      "Properties": {
+        "Name": "/TEST/playground/vibecoding-puzzles-lab/s3_bucket",
+        "Tags": {
+          "Stack": "playground",
+          "Stage": "TEST",
+          "gu:cdk:version": "TEST",
+          "gu:repo": "guardian/vibecoding-puzzle-lab",
+        },
+        "Type": "String",
+        "Value": {
+          "Ref": "BundlesBucket4FD5E753",
+        },
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "CertificateVibecodingpuzzleslab47B1F0F9": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "DomainName": "puzzle-vibes-test.dev-gutools.co.uk",
+        "Tags": [
+          {
+            "Key": "App",
+            "Value": "vibecoding-puzzles-lab",
+          },
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Name",
+            "Value": "VibecodingPuzzlesLab/CertificateVibecodingpuzzleslab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "ValidationMethod": "DNS",
+      },
+      "Type": "AWS::CertificateManager::Certificate",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CognitoGatekeeperuserpool3BFB7A36": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AccountRecoverySetting": {
+          "RecoveryMechanisms": [
+            {
+              "Name": "verified_phone_number",
+              "Priority": 1,
+            },
+            {
+              "Name": "verified_email",
+              "Priority": 2,
+            },
+          ],
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true,
+        },
+        "EmailVerificationMessage": "The verification code to your new account is {####}",
+        "EmailVerificationSubject": "Verify your new account",
+        "LambdaConfig": {
+          "PreAuthentication": {
+            "Fn::GetAtt": [
+              "authlambda5AE8A89F",
+              "Arn",
+            ],
+          },
+          "PreSignUp": {
+            "Fn::GetAtt": [
+              "authlambda5AE8A89F",
+              "Arn",
+            ],
+          },
+        },
+        "SmsVerificationMessage": "The verification code to your new account is {####}",
+        "UserPoolTags": {
+          "Stack": "playground",
+          "Stage": "TEST",
+          "gu:cdk:version": "TEST",
+          "gu:repo": "guardian/vibecoding-puzzle-lab",
+        },
+        "VerificationMessageTemplate": {
+          "DefaultEmailOption": "CONFIRM_WITH_CODE",
+          "EmailMessage": "The verification code to your new account is {####}",
+          "EmailSubject": "Verify your new account",
+          "SmsMessage": "The verification code to your new account is {####}",
+        },
+      },
+      "Type": "AWS::Cognito::UserPool",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CognitoGatekeeperuserpoolPreAuthenticationCognitoE9D7EF06": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "authlambda5AE8A89F",
+            "Arn",
+          ],
+        },
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoGatekeeperuserpool3BFB7A36",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CognitoGatekeeperuserpoolPreSignUpCognito67828669": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "authlambda5AE8A89F",
+            "Arn",
+          ],
+        },
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoGatekeeperuserpool3BFB7A36",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CognitoGatekeeperuserpoolalbclient6CC55A3D": {
+      "DependsOn": [
+        "googleidp5A744057",
+      ],
+      "Properties": {
+        "AccessTokenValidity": 60,
+        "AllowedOAuthFlows": [
+          "implicit",
+          "code",
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          "profile",
+          "phone",
+          "email",
+          "openid",
+          "aws.cognito.signin.user.admin",
+        ],
+        "CallbackURLs": [
+          "https://puzzle-vibes-test.dev-gutools.co.uk/oauth2/idpresponse",
+        ],
+        "GenerateSecret": true,
+        "IdTokenValidity": 60,
+        "RefreshTokenValidity": 10080,
+        "SupportedIdentityProviders": [
+          "Google",
+        ],
+        "TokenValidityUnits": {
+          "AccessToken": "minutes",
+          "IdToken": "minutes",
+          "RefreshToken": "minutes",
+        },
+        "UserPoolId": {
+          "Ref": "CognitoGatekeeperuserpool3BFB7A36",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolClient",
+    },
+    "CognitoGatekeeperuserpooldomain7833FDB9": {
+      "Properties": {
+        "Domain": "com-gu-vibecoding-puzzles-lab-test-083339773a5e112e075d989f8b4b",
+        "UserPoolId": {
+          "Ref": "CognitoGatekeeperuserpool3BFB7A36",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolDomain",
+    },
+    "EC2AppDns": {
+      "Properties": {
+        "Name": "puzzle-vibes-test.dev-gutools.co.uk",
+        "RecordType": "CNAME",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "ServiceLBE9A1ADBC",
+              "DNSName",
+            ],
+          },
+        ],
+        "Stage": "TEST",
+        "TTL": 300,
+      },
+      "Type": "Guardian::DNS::RecordSet",
+    },
+    "EcsCluster72B17558": {
+      "Properties": {
+        "CapacityProviders": [
+          "FARGATE",
+          "FARGATE_SPOT",
+        ],
+        "Cluster": {
+          "Ref": "EcsCluster97242B84",
+        },
+        "DefaultCapacityProviderStrategy": [],
+      },
+      "Type": "AWS::ECS::ClusterCapacityProviderAssociations",
+    },
+    "EcsCluster97242B84": {
+      "Properties": {
+        "ClusterName": "puzzle-lab-cluster-TEST",
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::ECS::Cluster",
+    },
     "IndexTableDA5422D9": {
       "DeletionPolicy": "Retain",
       "Properties": {
@@ -80,7 +449,6 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
           "ReadCapacityUnits": 5,
           "WriteCapacityUnits": 5,
         },
-        "TableName": "puzzle-lab-index-TEST",
         "Tags": [
           {
             "Key": "gu:cdk:version",
@@ -102,6 +470,1172 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
       },
       "Type": "AWS::DynamoDB::Table",
       "UpdateReplacePolicy": "Retain",
+    },
+    "IndexTableNameParamB15BAD60": {
+      "Properties": {
+        "Name": "/TEST/playground/vibecoding-puzzles-lab/indexTable",
+        "Tags": {
+          "Stack": "playground",
+          "Stage": "TEST",
+          "gu:cdk:version": "TEST",
+          "gu:repo": "guardian/vibecoding-puzzle-lab",
+        },
+        "Type": "String",
+        "Value": {
+          "Ref": "IndexTableDA5422D9",
+        },
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "Service9571FDD8": {
+      "DependsOn": [
+        "ServiceLBPublicListenerECSGroup0CC8688C",
+        "ServiceLBPublicListener46709EAA",
+        "TaskRole30FC0FBB",
+      ],
+      "Properties": {
+        "Cluster": {
+          "Ref": "EcsCluster97242B84",
+        },
+        "DeploymentConfiguration": {
+          "Alarms": {
+            "AlarmNames": [],
+            "Enable": false,
+            "Rollback": false,
+          },
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true,
+          },
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100,
+        },
+        "DeploymentController": {
+          "Type": "ECS",
+        },
+        "DesiredCount": 4,
+        "EnableECSManagedTags": false,
+        "HealthCheckGracePeriodSeconds": 5,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "webapp",
+            "ContainerPort": 80,
+            "TargetGroupArn": {
+              "Ref": "ServiceLBPublicListenerECSGroup0CC8688C",
+            },
+          },
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "ServiceSecurityGroupEEA09B68",
+                  "GroupId",
+                ],
+              },
+            ],
+            "Subnets": {
+              "Ref": "VpcPrivateParam",
+            },
+          },
+        },
+        "ServiceName": "puzzle-vibes-TEST",
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "TaskDefinition": {
+          "Ref": "TaskDefinitionB36D86D9",
+        },
+      },
+      "Type": "AWS::ECS::Service",
+    },
+    "ServiceLBE9A1ADBC": {
+      "Properties": {
+        "LoadBalancerAttributes": [
+          {
+            "Key": "deletion_protection.enabled",
+            "Value": "false",
+          },
+          {
+            "Key": "idle_timeout.timeout_seconds",
+            "Value": "60",
+          },
+        ],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "ServiceLBSecurityGroupF7435A5C",
+              "GroupId",
+            ],
+          },
+          {
+            "Fn::GetAtt": [
+              "ldpaccessVibecodingpuzzleslab52B67849",
+              "GroupId",
+            ],
+          },
+        ],
+        "Subnets": {
+          "Ref": "VpcPublicParam",
+        },
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "Type": "application",
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+    },
+    "ServiceLBPublicListener46709EAA": {
+      "Properties": {
+        "Certificates": [
+          {
+            "CertificateArn": {
+              "Ref": "CertificateVibecodingpuzzleslab47B1F0F9",
+            },
+          },
+        ],
+        "DefaultActions": [
+          {
+            "AuthenticateCognitoConfig": {
+              "SessionTimeout": "900",
+              "UserPoolArn": {
+                "Fn::GetAtt": [
+                  "CognitoGatekeeperuserpool3BFB7A36",
+                  "Arn",
+                ],
+              },
+              "UserPoolClientId": {
+                "Ref": "CognitoGatekeeperuserpoolalbclient6CC55A3D",
+              },
+              "UserPoolDomain": {
+                "Ref": "CognitoGatekeeperuserpooldomain7833FDB9",
+              },
+            },
+            "Order": 1,
+            "Type": "authenticate-cognito",
+          },
+          {
+            "Order": 2,
+            "TargetGroupArn": {
+              "Ref": "ServiceLBPublicListenerECSGroup0CC8688C",
+            },
+            "Type": "forward",
+          },
+        ],
+        "LoadBalancerArn": {
+          "Ref": "ServiceLBE9A1ADBC",
+        },
+        "Port": 443,
+        "Protocol": "HTTPS",
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+    },
+    "ServiceLBPublicListenerECSGroup0CC8688C": {
+      "Properties": {
+        "HealthCheckIntervalSeconds": 10,
+        "HealthCheckPath": "/health",
+        "HealthCheckTimeoutSeconds": 5,
+        "HealthyThresholdCount": 2,
+        "Matcher": {
+          "HttpCode": "200",
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "TargetGroupAttributes": [
+          {
+            "Key": "stickiness.enabled",
+            "Value": "false",
+          },
+          {
+            "Key": "deregistration_delay.timeout_seconds",
+            "Value": "30",
+          },
+        ],
+        "TargetType": "ip",
+        "UnhealthyThresholdCount": 5,
+        "VpcId": {
+          "Ref": "VpcId",
+        },
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+    },
+    "ServiceLBSecurityGroupF7435A5C": {
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB VibecodingPuzzlesLabServiceLB6216340B",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow to IdP endpoint",
+            "FromPort": 443,
+            "IpProtocol": "tcp",
+            "ToPort": 443,
+          },
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow from anyone on port 443",
+            "FromPort": 443,
+            "IpProtocol": "tcp",
+            "ToPort": 443,
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "VpcId": {
+          "Ref": "VpcId",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "ServiceLBSecurityGrouptoVibecodingPuzzlesLabServiceSecurityGroup4A3237428019EF3C94": {
+      "Properties": {
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ServiceSecurityGroupEEA09B68",
+            "GroupId",
+          ],
+        },
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ServiceLBSecurityGroupF7435A5C",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 80,
+      },
+      "Type": "AWS::EC2::SecurityGroupEgress",
+    },
+    "ServiceSecurityGroupEEA09B68": {
+      "DependsOn": [
+        "TaskRole30FC0FBB",
+      ],
+      "Properties": {
+        "GroupDescription": "VibecodingPuzzlesLab/Service/Service/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "VpcId": {
+          "Ref": "VpcId",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "ServiceSecurityGroupfromVibecodingPuzzlesLabServiceLBSecurityGroup8DDD941F8094CF2671": {
+      "DependsOn": [
+        "TaskRole30FC0FBB",
+      ],
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ServiceSecurityGroupEEA09B68",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ServiceLBSecurityGroupF7435A5C",
+            "GroupId",
+          ],
+        },
+        "ToPort": 80,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "ServiceSecurityGroupfromVibecodingPuzzlesLabldpaccessVibecodingpuzzleslab621234FC804929CBC5": {
+      "DependsOn": [
+        "TaskRole30FC0FBB",
+      ],
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ServiceSecurityGroupEEA09B68",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ldpaccessVibecodingpuzzleslab52B67849",
+            "GroupId",
+          ],
+        },
+        "ToPort": 80,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "TaskDefinitionB36D86D9": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Cpu": 512,
+            "Environment": [
+              {
+                "Name": "STAGE",
+                "Value": "TEST",
+              },
+              {
+                "Name": "STACK",
+                "Value": "playground",
+              },
+              {
+                "Name": "AWS_REGION",
+                "Value": {
+                  "Ref": "AWS::Region",
+                },
+              },
+              {
+                "Name": "APP",
+                "Value": "vibecoding-puzzles-lab",
+              },
+            ],
+            "Essential": true,
+            "Image": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ".dkr.ecr.",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix",
+                  },
+                  "/vibecoding-puzzle-builder:DEV",
+                ],
+              ],
+            },
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "TaskDefinitionwebappLogGroup3AA7E337",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "puzzle-lab",
+              },
+            },
+            "Memory": 1024,
+            "MountPoints": [
+              {
+                "ContainerPath": "/var/lib/nginx",
+                "ReadOnly": false,
+                "SourceVolume": "nginx-temp",
+              },
+              {
+                "ContainerPath": "/var/log/nginx",
+                "ReadOnly": false,
+                "SourceVolume": "nginx-log",
+              },
+            ],
+            "Name": "webapp",
+            "PortMappings": [
+              {
+                "ContainerPort": 80,
+                "Protocol": "tcp",
+              },
+            ],
+            "ReadonlyRootFilesystem": true,
+          },
+        ],
+        "Cpu": "512",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "TaskDefinitionExecutionRole8D61C2FB",
+            "Arn",
+          ],
+        },
+        "Family": "VibecodingPuzzlesLabTaskDefinition2D47AE19",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE",
+        ],
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole30FC0FBB",
+            "Arn",
+          ],
+        },
+        "Volumes": [
+          {
+            "Name": "nginx-temp",
+          },
+          {
+            "Name": "nginx-log",
+          },
+        ],
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+    },
+    "TaskDefinitionExecutionRole8D61C2FB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "TaskDefinitionExecutionRoleDefaultPolicy1F3406F5": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ecr:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":repository/vibecoding-puzzle-builder",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "ecr:GetAuthorizationToken",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TaskDefinitionwebappLogGroup3AA7E337",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "TaskDefinitionExecutionRoleDefaultPolicy1F3406F5",
+        "Roles": [
+          {
+            "Ref": "TaskDefinitionExecutionRole8D61C2FB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "TaskDefinitionwebappLogGroup3AA7E337": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TaskRole30FC0FBB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:PutObject",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "BundlesBucket4FD5E753",
+                        "Arn",
+                      ],
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "BundlesBucket4FD5E753",
+                              "Arn",
+                            ],
+                          },
+                          "/*",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "bucketAccess",
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Query",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "IndexTableDA5422D9",
+                        "Arn",
+                      ],
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "IndexTableDA5422D9",
+                              "Arn",
+                            ],
+                          },
+                          "/index/*",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "dynamoAccess",
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "ssm:GetParameter",
+                    "ssm:GetParameters",
+                    "ssm:GetParametersByPath",
+                    "ssm:ListParameters",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab",
+                        ],
+                      ],
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:ssm:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "configAccess",
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "bedrock:InvokeModel",
+                  "Effect": "Allow",
+                  "Resource": [
+                    "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:bedrock:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "bedrockAccess",
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "authlambda5AE8A89F": {
+      "DependsOn": [
+        "authlambdaServiceRoleDefaultPolicy4F870132",
+        "authlambdaServiceRole39F49DB1",
+      ],
+      "Properties": {
+        "Architectures": [
+          "x86_64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Ref": "bucketoverrideParameter",
+          },
+          "S3Key": "deploy/PROD/cognito-lambda/devx-cognito-lambda-amd64-v2.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "ALLOWED_GROUPS": "engineering@guardian.co.uk",
+            "APP": "vibecoding-puzzles-lab",
+            "GATEKEEPER_FUNCTION_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:aws:lambda:eu-west-1:",
+                  {
+                    "Ref": "deploytoolsaccountidparameterParameter",
+                  },
+                  ":function:deploy-PROD-gatekeeper-lambda",
+                ],
+              ],
+            },
+            "STACK": "playground",
+            "STAGE": "TEST",
+          },
+        },
+        "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogFormat": "JSON",
+        },
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "authlambdaServiceRole39F49DB1",
+            "Arn",
+          ],
+        },
+        "Runtime": "provided.al2023",
+        "Tags": [
+          {
+            "Key": "App",
+            "Value": "vibecoding-puzzles-lab",
+          },
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Owner",
+            "Value": "DevX",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "Timeout": 30,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "authlambdaServiceRole39F49DB1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "App",
+            "Value": "vibecoding-puzzles-lab",
+          },
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Owner",
+            "Value": "DevX",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "authlambdaServiceRoleDefaultPolicy4F870132": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "bucketoverrideParameter",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "bucketoverrideParameter",
+                      },
+                      "/deploy/PROD/cognito-lambda/devx-cognito-lambda-amd64-v2.zip",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "ssm:GetParametersByPath",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":parameter/TEST/playground/vibecoding-puzzles-lab",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "ssm:GetParameters",
+                "ssm:GetParameter",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":parameter/TEST/playground/vibecoding-puzzles-lab/*",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:lambda:eu-west-1:",
+                    {
+                      "Ref": "deploytoolsaccountidparameterParameter",
+                    },
+                    ":function:deploy-PROD-gatekeeper-lambda",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "authlambdaServiceRoleDefaultPolicy4F870132",
+        "Roles": [
+          {
+            "Ref": "authlambdaServiceRole39F49DB1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "googleidp5A744057": {
+      "Properties": {
+        "AttributeMapping": {
+          "email": "email",
+          "family_name": "family_name",
+          "given_name": "given_name",
+          "name": "name",
+          "picture": "picture",
+        },
+        "ProviderDetails": {
+          "authorize_scopes": "openid email profile",
+          "client_id": "{{resolve:secretsmanager:/TEST/playground/vibecoding-puzzles-lab/google-auth-credentials:SecretString:clientId::}}",
+          "client_secret": "{{resolve:secretsmanager:/TEST/playground/vibecoding-puzzles-lab/google-auth-credentials:SecretString:clientSecret::}}",
+        },
+        "ProviderName": "Google",
+        "ProviderType": "Google",
+        "UserPoolId": {
+          "Ref": "CognitoGatekeeperuserpool3BFB7A36",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolIdentityProvider",
+    },
+    "ldpaccessVibecodingpuzzleslab52B67849": {
+      "Properties": {
+        "GroupDescription": "Allow all outbound HTTPS traffic",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound HTTPS traffic",
+            "FromPort": 443,
+            "IpProtocol": "tcp",
+            "ToPort": 443,
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "App",
+            "Value": "vibecoding-puzzles-lab",
+          },
+          {
+            "Key": "gu:cdk:version",
+            "Value": "TEST",
+          },
+          {
+            "Key": "gu:repo",
+            "Value": "guardian/vibecoding-puzzle-lab",
+          },
+          {
+            "Key": "Stack",
+            "Value": "playground",
+          },
+          {
+            "Key": "Stage",
+            "Value": "TEST",
+          },
+        ],
+        "VpcId": {
+          "Ref": "VpcId",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "ldpaccessVibecodingpuzzleslabtoVibecodingPuzzlesLabServiceSecurityGroup4A32374280F9D8FC04": {
+      "Properties": {
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ServiceSecurityGroupEEA09B68",
+            "GroupId",
+          ],
+        },
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ldpaccessVibecodingpuzzleslab52B67849",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 80,
+      },
+      "Type": "AWS::EC2::SecurityGroupEgress",
     },
   },
 }
