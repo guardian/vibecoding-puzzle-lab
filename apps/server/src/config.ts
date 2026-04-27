@@ -2,12 +2,18 @@ import { SSMClient, GetParameterCommand, GetParametersByPathCommand, GetParamete
 
 const client = new SSMClient();
 
+interface Configuration {
+    bedrock_model_id: string;
+    s3_bucket: string;
+    indexTable: string;
+}
+
 export async function getParameter(name: string): Promise<string|undefined> {
     const response = await client.send(new GetParameterCommand({ Name: name, WithDecryption: true }));
     return response.Parameter?.Value;
 }
 
-export async function getConfig(basePath: string): Promise<Record<string, string>> {
+export async function getConfig(basePath: string): Promise<Configuration> {
     const config: Record<string, string> = {};
     let nextToken: string | undefined = undefined;
 
@@ -27,5 +33,13 @@ export async function getConfig(basePath: string): Promise<Record<string, string
         nextToken = response.NextToken;
     } while (nextToken);
     
-    return config;
+    if(!config['bedrock_model_id']) throw new Error("Missing bedrock_model_id in configuration");
+    if(!config['s3_bucket']) throw new Error("Missing s3_bucket in configuration");
+    if(!config['indexTable']) throw new Error("Missing indexTable in configuration");
+
+    return {
+        bedrock_model_id: config['bedrock_model_id'],
+        s3_bucket: config['s3_bucket'],
+        indexTable: config['indexTable'],
+    };
 }

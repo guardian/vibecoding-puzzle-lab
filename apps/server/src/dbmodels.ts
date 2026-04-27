@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-export const PuzzleStates = z.enum(['visible','hidden','replaced', 'blocked']);
+export const PuzzleStates = z.enum(['draft','visible','hidden','replaced', 'blocked']);
 
 export const PuzzleInfo = z.object({
     id: z.uuid(),
