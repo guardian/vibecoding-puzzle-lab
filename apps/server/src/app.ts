@@ -3,9 +3,8 @@ import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
-import { PuzzleInfo, PuzzleInfoUpdate, PuzzleStates } from './dbmodels.js';
-import { listPuzzles, updatePuzzleInfo, writePuzzleInfo } from './dynamo.js';
-import { CreatePuzzleRequest } from '@puzzle-lab/common-lib';
+import { listPuzzles, updatePuzzleInfo, updatePuzzleState, writePuzzleInfo } from './dynamo.js';
+import { CreatePuzzleRequest, PuzzleInfo, PuzzleInfoUpdate, PuzzleStates} from '@puzzle-lab/common-lib';
 import { userIdentityFromHeaders } from './auth.js';
 
 
@@ -139,7 +138,7 @@ export async function createApp(): Promise<Express> {
         try {
           const responseJson = extractJson(result.response, helperPrefix);
           res.json(responseJson);
-          return;
+          break;
         } catch(err) {
           console.warn("Failed to parse Bedrock response as JSON, adding more context and retrying:", err);
           messages.push(userMessage(`I couldn't parse this json: ${helperPrefix + extractText(result.response)}`));
@@ -151,6 +150,12 @@ export async function createApp(): Promise<Express> {
     } catch (err) {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });
+    }
+
+    try {
+      await updatePuzzleState(config["indexTable"], bundleId as string, 'visible');
+    } catch(err) {
+      console.error(`Failed to update puzzle state to visible for bundle ${bundleId}:`, err);
     }
   });
 

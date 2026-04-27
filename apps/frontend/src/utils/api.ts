@@ -1,3 +1,4 @@
+import { PuzzleIndexResponse, type PuzzleState } from "@puzzle-lab/common-lib";
 import type { PreviewError } from "../components/PreviewFrame";
 import { ModelResponse } from "./models";
 
@@ -84,4 +85,14 @@ export async function debugFault({
       } else {
         throw new Error(`Model debug request failed with status: ${modelResponse.status}`);
       }
+}
+
+export async function loadIndexPage(state:PuzzleState, limit: number = 20, cursor: string | null = null): Promise<PuzzleIndexResponse> {
+    const response = await fetch(`/api/index?state=${state}&limit=${limit}${cursor ? `&cursor=${cursor}` : ""}`);
+    if(response.ok) {
+        return PuzzleIndexResponse.parse(await response.json());
+    } else {
+        console.error(`Failed to load index: ${response.status} ${await response.text()}`);
+        throw new Error("Failed to load index");
+    }
 }
