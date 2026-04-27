@@ -6,7 +6,8 @@ import { DebugRequest } from './models.js';
 import { PuzzleInfo, PuzzleInfoUpdate, PuzzleStates } from './dbmodels.js';
 import { listPuzzles, updatePuzzleInfo, writePuzzleInfo } from './dynamo.js';
 import { CreatePuzzleRequest } from '@puzzle-lab/common-lib';
-import { decodeJwt } from 'jose/jwt/decode';
+import { userIdentityFromHeaders } from './auth.js';
+
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -154,14 +155,12 @@ export async function createApp(): Promise<Express> {
   });
 
   app.get('/api/whoami', (req: Request, res: Response) => {
-    const sub = req.headers['x-amzn-oidc-identity'] as string || 'unknown user'
     try {
-      const jwt = req.headers['x-amzn-oidc-data'] as string || 'no jwt provided';
-      const decoded = decodeJwt(jwt);
-      res.status(200).json({ sub, decoded });
+      const info = userIdentityFromHeaders(req.headers);
+      res.status(200).json(info);
     } catch(err) {
-      console.error(`Could not decode JWT passed by ALB: ${err}`);
-      res.status(200).json({ sub, decoded: 'invalid jwt' });
+      console.error(`Could not get user identity from headers: ${err}`);
+      res.status(500).json({ error: 'Failed to get user identity' });
     }
   });
 
@@ -172,20 +171,25 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
-    const author = req.headers['x-amzn-oidc-identity'] as string || 'unknown user'; // MAYBE!
+    try {
+      const userInfo = userIdentityFromHeaders(req.headers);
 
-    const info:PuzzleInfo = {
-      id: crypto.randomUUID(),
-      name: parseResult.data.name ?? "Untitled Puzzle",
-      author,
-      model: config.bedrock_model_id,
-      state: 'draft',
-      lastModified: new Date().toISOString(),
-    };
+      const info:PuzzleInfo = {
+        id: crypto.randomUUID(),
+        name: parseResult.data.name ?? "Untitled Puzzle",
+        author: userInfo.email,
+        model: config.bedrock_model_id,
+        state: 'draft',
+        lastModified: new Date().toISOString(),
+      };
 
-    await writePuzzleInfo(config.indexTable, info);
+      await writePuzzleInfo(config.indexTable, info);
 
-    res.status(201).json({ id: info.id });
+      res.status(201).json({ id: info.id });
+    } catch(err) {
+      console.error("Error creating new puzzle bundle:", err);
+      res.status(500).json({ error: 'Failed to create new puzzle bundle' });
+    }
   });
 
   // Create a short-lived presigned URL for uploading a bundle directly to S3.
