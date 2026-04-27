@@ -6,6 +6,7 @@ import type { PreviewError } from "../components/PreviewFrame";
 import { initialCode } from "./InitialContent";
 import EngineerView from "./EngineerView";
 import EditorView from "./EditorView";
+import { LoginFrame } from "../components/LoginFrame";
 
 export function PuzzleEditor() {
     const { bundleId, mode } = useParams<{ bundleId: string, mode: string }>();
@@ -92,35 +93,39 @@ export function PuzzleEditor() {
   switch(mode) {
     case 'engineer':
       return (
-        <EngineerView
-          bundleId={bundleId ?? ""}
-          setModelState={setModelState}
-          modelState={modelState}
-          code={code}
-          setCode={setCode}
-          modelNotes={modelNotes}
-          setModelNotes={setModelNotes}
-          containerState={containerState}
-          setContainerState={setContainerState}
-          lastPreviewError={lastPreviewError}
-          setLastPreviewError={setLastPreviewError}
-          devServerLogs={devServerLogs}
-          setDevServerLogs={setDevServerLogs}
-          handlePreviewError={handlePreviewError}
-        />
+        <LoginFrame>
+          <EngineerView
+            bundleId={bundleId ?? ""}
+            setModelState={setModelState}
+            modelState={modelState}
+            code={code}
+            setCode={setCode}
+            modelNotes={modelNotes}
+            setModelNotes={setModelNotes}
+            containerState={containerState}
+            setContainerState={setContainerState}
+            lastPreviewError={lastPreviewError}
+            setLastPreviewError={setLastPreviewError}
+            devServerLogs={devServerLogs}
+            setDevServerLogs={setDevServerLogs}
+            handlePreviewError={handlePreviewError}
+          />
+        </LoginFrame>
       );
     case 'editor':
       return (
-        <EditorView
-          bundleId={bundleId ?? ""}
-          code={code}
-          onCodeLoaded={setCode}
-          modelState={modelState}
-          containerState={containerState}
-          setContainerState={setContainerState}
-          setDevServerLogs={setDevServerLogs}
-          handlePreviewError={handlePreviewError}
-        />
+        <LoginFrame>
+          <EditorView
+            bundleId={bundleId ?? ""}
+            code={code}
+            onCodeLoaded={setCode}
+            modelState={modelState}
+            containerState={containerState}
+            setContainerState={setContainerState}
+            setDevServerLogs={setDevServerLogs}
+            handlePreviewError={handlePreviewError}
+          />
+        </LoginFrame>
       );
       default:
         return <div style={{ padding: "2em" }}>Invalid mode</div>;
