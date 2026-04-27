@@ -3,7 +3,7 @@ import { useState } from "react";
 import { CreatePuzzleResponse } from "@puzzle-lab/common-lib";
 import { LoginFrame } from "../components/LoginFrame";
 
-function Index() {
+function StartingPromptForm() {
   const nav = useNavigate();
   const [textContent, setTextContent] = useState("");
 
@@ -65,4 +65,4 @@ function Index() {
   )
 }
 
-export default Index
+export default StartingPromptForm;

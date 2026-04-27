@@ -1,6 +1,6 @@
 import { DynamoDBClient, QueryCommand, AttributeValue, PutItemCommand, DeleteItemCommand, UpdateItemCommand, ReturnValue } from "@aws-sdk/client-dynamodb";
 import { z } from "zod";
-import { PuzzleInfo, PuzzleInfoUpdate, PuzzleState } from "./dbmodels";
+import { PuzzleInfo, PuzzleInfoUpdate, PuzzleState } from "@puzzle-lab/common-lib";
 import { formatISO } from "date-fns/formatISO";
 
 const dbClient = new DynamoDBClient({region: process.env['AWS_REGION']});
@@ -70,13 +70,13 @@ export async function listPuzzles(TableName: string, state: PuzzleState, Limit: 
 
     const response = await dbClient.send(new QueryCommand({
         TableName,
-        IndexName: "idxStatusDate",
+        IndexName: "idxStateDate",
         KeyConditionExpression: '#s = :stateParam',
         ExpressionAttributeNames: {
             '#s': "state"
         },
         ExpressionAttributeValues: {
-            ':state': {S: state},
+            ':stateParam': {S: state},
         },
         Limit,
         ExclusiveStartKey,

@@ -1,12 +1,18 @@
-import { createBrowserRouter, RouterProvider } from 'react-router'
-import Index from './pages/Index'
+import { createBrowserRouter, RouterProvider } from 'react-router';
 import { PuzzleEditor } from './pages/PuzzleEditor'
 import { UserInfoLoader } from './components/UserInfoLoader'
+import StartingPromptForm from './pages/StartingPromptForm';
+import { ExistingPuzzlesBrowser } from './pages/ExistingPuzzlesBrowser';
 
 const router = createBrowserRouter([
   {
     path: "/",
-    Component: Index,
+    Component: ExistingPuzzlesBrowser,
+    loader: UserInfoLoader,
+  },
+  {
+    path: "/new",
+    Component: StartingPromptForm,
     loader: UserInfoLoader,
   },
   {
