@@ -16,10 +16,10 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "apps",
     "paths": {
       "@puzzle-lab/common-lib": ["apps/common-lib/src/index.ts"],
-      "@puzzle-lab/common-lib/*": ["apps/common-lib/src/*"],
-      "common-lib": ["apps/common-lib/src/index.ts"]
+      "@puzzle-lab/common-lib/*": ["apps/common-lib/src/*"]
     }
   }
 }
