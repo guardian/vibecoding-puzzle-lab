@@ -1,9 +1,25 @@
 {
   "files": [],
   "references": [
-    { "path": "./apps/frontend/tsconfig.json" },
-    { "path": "./apps/server/tsconfig.json" },
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+    {
+      "path": "./apps/frontend/tsconfig.json"
+    },
+    {
+      "path": "./apps/server/tsconfig.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@puzzle-lab/common-lib": ["apps/common-lib/src/index.ts"],
+      "@puzzle-lab/common-lib/*": ["apps/common-lib/src/*"],
+      "common-lib": ["apps/common-lib/src/index.ts"]
+    }
+  }
 }

@@ -3,8 +3,10 @@ import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
-import { PuzzleInfoUpdate, PuzzleStates } from './dbmodels.js';
-import { listPuzzles, updatePuzzleInfo } from './dynamo.js';
+import { PuzzleInfo, PuzzleInfoUpdate, PuzzleStates } from './dbmodels.js';
+import { listPuzzles, updatePuzzleInfo, writePuzzleInfo } from './dynamo.js';
+import { CreatePuzzleRequest } from '@puzzle-lab/common-lib';
+import { decodeJwt } from 'jose/jwt/decode';
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -149,6 +151,41 @@ export async function createApp(): Promise<Express> {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });
     }
+  });
+
+  app.get('/api/whoami', (req: Request, res: Response) => {
+    const sub = req.headers['x-amzn-oidc-identity'] as string || 'unknown user'
+    try {
+      const jwt = req.headers['x-amzn-oidc-data'] as string || 'no jwt provided';
+      const decoded = decodeJwt(jwt);
+      res.status(200).json({ sub, decoded });
+    } catch(err) {
+      console.error(`Could not decode JWT passed by ALB: ${err}`);
+      res.status(200).json({ sub, decoded: 'invalid jwt' });
+    }
+  });
+
+  app.post('/api/bundle/new', async (req: Request<never, CreatePuzzleRequest>, res: Response) => {
+    const parseResult = CreatePuzzleRequest.safeParse(req.body);
+    if(!parseResult.success) {
+      res.status(400).json({ error: 'Invalid request body', details: parseResult.error });
+      return;
+    }
+
+    const author = req.headers['x-amzn-oidc-identity'] as string || 'unknown user'; // MAYBE!
+
+    const info:PuzzleInfo = {
+      id: crypto.randomUUID(),
+      name: parseResult.data.name ?? "Untitled Puzzle",
+      author,
+      model: config.bedrock_model_id,
+      state: 'draft',
+      lastModified: new Date().toISOString(),
+    };
+
+    await writePuzzleInfo(config.indexTable, info);
+
+    res.status(201).json({ id: info.id });
   });
 
   // Create a short-lived presigned URL for uploading a bundle directly to S3.
