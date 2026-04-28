@@ -136,9 +136,16 @@ export async function createApp(): Promise<Express> {
         });
 
         try {
-          const responseJson = extractJson(result.response, helperPrefix);
-          res.json(responseJson);
-          break;
+          const responseJson = extractJson(result.response, helperPrefix) as {jsx: string, explanation?: string, title?: string};
+          try {
+            if(responseJson.title) {
+              await updatePuzzleInfo(config["indexTable"], bundleId as string, {name: responseJson.title, state: 'visible'});
+            }
+          } catch(err) {
+            console.warn(`Failed to update puzzle title after generation for bundle ${bundleId}:`, err);
+          }
+          res.status(200).json(responseJson);
+          return;
         } catch(err) {
           console.warn("Failed to parse Bedrock response as JSON, adding more context and retrying:", err);
           messages.push(userMessage(`I couldn't parse this json: ${helperPrefix + extractText(result.response)}`));
