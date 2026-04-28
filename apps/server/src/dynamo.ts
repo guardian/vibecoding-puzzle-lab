@@ -88,22 +88,54 @@ export async function listPuzzles(TableName: string, state: PuzzleState, Limit: 
     return {results, continuationToken};
 }
 
+export async function getPuzzleInfo(TableName: string, id: string): Promise<PuzzleInfo | null> {
+    const response = await dbClient.send(new QueryCommand({
+        TableName,
+        KeyConditionExpression: '#id = :idParam',
+        ExpressionAttributeNames: {
+            '#id': "id"
+        },
+        ExpressionAttributeValues: {
+            ':idParam': {S: id},
+        },
+    }));
+
+    if(response.Items && response.Items.length > 0) {
+        return unmarshalPuzzleInfo(response.Items[0]);
+    } else {
+        return null;
+    }
+}
+
 export async function updatePuzzleInfo(TableName: string, id: string, update:PuzzleInfoUpdate) {
     const updateParts = [
-        update.author ? "author = :ath" : undefined,
-        update.name ? "name = :n" : undefined,
-        update.state ? "state = :st" : undefined,
+        update.author ? "#a = :ath" : undefined,
+        update.name ? "#n = :n" : undefined,
+        update.state ? "#st = :st" : undefined,
     ];
     const attribs = [
         update.author ? {":ath": {S: update.author}} : undefined,
         update.name ? {":n": {S: update.name}} : undefined,
         update.state ? {":st": {S: update.state}} : undefined
     ];
+    const names = [
+        update.author ? {"#a": "author"} : undefined,
+        update.name ? {"#n": "name"} : undefined,
+        update.state ? {"#st": "state"} : undefined,
+    ];
 
     if(updateParts.length==0) return;
 
-    const UpdateExpression = updateParts.filter(p=>!!p).join(", ");
+    const UpdateExpression = "SET " + updateParts.filter(p=>!!p).join(", ");
     const ExpressionAttributeValues = attribs.reduce((acc, attr)=>{
+        if(attr) {
+            return {...acc, ...attr}
+        } else {
+            return acc;
+        }
+    }, {});
+
+    const ExpressionAttributeNames = names.reduce((acc, attr)=>{
         if(attr) {
             return {...acc, ...attr}
         } else {
@@ -118,6 +150,7 @@ export async function updatePuzzleInfo(TableName: string, id: string, update:Puz
         },
         UpdateExpression,
         ExpressionAttributeValues,
+        ExpressionAttributeNames,
         ReturnValues: ReturnValue.ALL_NEW,
     }));
 

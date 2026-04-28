@@ -3,7 +3,7 @@ import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
-import { listPuzzles, updatePuzzleInfo, updatePuzzleState, writePuzzleInfo } from './dynamo.js';
+import { getPuzzleInfo, listPuzzles, updatePuzzleInfo, updatePuzzleState, writePuzzleInfo } from './dynamo.js';
 import { CreatePuzzleRequest, PuzzleInfo, PuzzleInfoUpdate, PuzzleStates} from '@puzzle-lab/common-lib';
 import { userIdentityFromHeaders } from './auth.js';
 
@@ -280,6 +280,27 @@ export async function createApp(): Promise<Express> {
         status: "error",
         detail: "database error, see logs"
       });
+    }
+  });
+
+  app.get('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const response = await getPuzzleInfo(config["indexTable"], bundleId);
+      if(response) {
+        res.status(200).json(response)
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
     }
   });
 

@@ -6,9 +6,10 @@ import { Link } from "react-router";
 
 interface LoginFrameProps {
     children: React.ReactNode;
+    inserts?: React.ReactNode;
 }
 
-export const LoginFrame:React.FC<LoginFrameProps> = ({children}) => {
+export const LoginFrame:React.FC<LoginFrameProps> = ({children, inserts}) => {
     const [expired, setExpired] = React.useState(false);
     const loginInfo = useLoaderData() as FrontendUserInfo | null;
     console.log(loginInfo);
@@ -33,6 +34,9 @@ export const LoginFrame:React.FC<LoginFrameProps> = ({children}) => {
             <div>
                 <Link to="/"><HomeIcon className="h-5 w-5 text-slate-700"/></Link>
             </div>
+            {
+                inserts ? <div className="ml-4">{inserts}</div> : null
+            }
             <div className="ml-auto">
                 {
                     loginInfo?.isLoggedIn ? (
