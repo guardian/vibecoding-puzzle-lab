@@ -31,15 +31,16 @@ export function HomepageBrowser() {
 
     return <LoginFrame>
         <div className="p-4">
-            <h1 className="mt-0 text-2xl font-semibold">What's cooking in the Lab?</h1>
-            <p className="mb-4 flex items-center gap-2 text-slate-700">
-                <span className="text-4xl">🧠</span><span>Want to make something new?</span>
-                <Button onClick={()=>nav('/new')}
-                    className="mt-2 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                    Start a new puzzle
-                </Button>
-            </p>
-
+            <div className="flex items-center justify-between">
+                <h1 className="mt-0 text-2xl font-semibold">What's cooking in the Lab?</h1>
+                <p className="mb-4 flex items-center gap-2 text-slate-700">
+                    <span className="text-4xl">🧠</span><span>Want to make something new?</span>
+                    <Button onClick={()=>nav('/new')}
+                        className="mt-2 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                        Start a new puzzle
+                    </Button>
+                </p>
+            </div>
             <ExistingPuzzlesBrowser showingState="visible" pageSize={100}/>
         </div>
     </LoginFrame>
