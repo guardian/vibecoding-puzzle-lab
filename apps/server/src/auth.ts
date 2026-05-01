@@ -8,14 +8,14 @@ export const JWTClaims = z.object({
     sub: z.string(),
     name: z.string(),
     email: z.string(),
-    email_verified: z.boolean().optional(),
+    email_verified: z.string().optional(), //should be true or false but encapsulated in string
     identities: z.string().optional(),
     given_name: z.string().optional(),
     family_name: z.string().optional(),
     picture: z.string().optional(),
     username: z.string().optional(),
     exp: z.number(),
-    iss: z.number(),
+    iss: z.string(),    //should be numeric but encapsulated in string
 });
 
 export function userIdentityFromHeaders(headers: IncomingHttpHeaders): UserInfoResponse {
