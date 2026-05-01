@@ -1,3 +1,4 @@
+import { PuzzleIndexResponse, PuzzleInfo, type PuzzleState } from "@puzzle-lab/common-lib";
 import type { PreviewError } from "../components/PreviewFrame";
 import { ModelResponse } from "./models";
 
@@ -84,4 +85,50 @@ export async function debugFault({
       } else {
         throw new Error(`Model debug request failed with status: ${modelResponse.status}`);
       }
+}
+
+export async function loadIndexPage(state:PuzzleState, limit: number = 20, cursor: string | null = null): Promise<PuzzleIndexResponse> {
+    const response = await fetch(`/api/index?state=${state}&limit=${limit}${cursor ? `&cursor=${cursor}` : ""}`);
+    if(response.ok) {
+        return PuzzleIndexResponse.parse(await response.json());
+    } else {
+        console.error(`Failed to load index: ${response.status} ${await response.text()}`);
+        throw new Error("Failed to load index");
+    }
+}
+
+export async function loadPuzzleInfo(bundleId: string): Promise<PuzzleInfo | null> {
+    const response = await fetch(`/api/bundle/${bundleId}/metadata`);
+    if(response.ok) {
+        return PuzzleInfo.parse(await response.json());
+    } else if(response.status === 404) {
+        return null;
+    } else {
+        console.error(`Failed to load puzzle info for ${bundleId}: ${response.status} ${await response.text()}`);
+        throw new Error("Failed to load puzzle info");
+    }
+}
+
+export async function updatePuzzleName(bundleId: string, newName: string): Promise<PuzzleInfo> {
+    const response = await fetch(`/api/bundle/${bundleId}/metadata`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newName }),
+    });
+
+    if(!response.ok) {
+        console.error(`Failed to update puzzle name for ${bundleId}: ${response.status} ${await response.text()}`);
+        throw new Error("Failed to update puzzle name");
+    }
+
+    const responseBody = await response.json();
+    const updatedInfo = responseBody?.updated;
+    if(updatedInfo) {
+        return PuzzleInfo.parse(updatedInfo);
+    } else {
+        console.error(`Unexpected response format when updating puzzle name for ${bundleId}:`, responseBody);
+        throw new Error("Unexpected response format when updating puzzle name");
+    }
 }

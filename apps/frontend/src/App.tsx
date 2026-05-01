@@ -1,13 +1,30 @@
-import { Route, Routes } from 'react-router'
-import Index from './pages/Index'
+import { createBrowserRouter, RouterProvider } from 'react-router';
 import { PuzzleEditor } from './pages/PuzzleEditor'
+import { UserInfoLoader } from './components/UserInfoLoader'
+import StartingPromptForm from './pages/StartingPromptForm';
+import { HomepageBrowser } from './pages/HomepageBrowser';
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    Component: HomepageBrowser,
+    loader: UserInfoLoader,
+  },
+  {
+    path: "/new",
+    Component: StartingPromptForm,
+    loader: UserInfoLoader,
+  },
+  {
+    path: "/bundle/:bundleId/:mode",
+    Component: PuzzleEditor,
+    loader: UserInfoLoader,
+  }
+]);
+ 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/bundle/:bundleId/:mode" element={<PuzzleEditor />} />
-    </Routes>
+    <RouterProvider router={router} />
   )
 }
 

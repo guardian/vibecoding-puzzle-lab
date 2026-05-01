@@ -250,6 +250,7 @@ Your response must be in the following JSON format:
 
 {
   "jsx": "the full jsx code for the puzzle, including the root component.  This should be a string with escaped newlines and quotes as necessary",
+  "title": "a short title for the puzzle, suitable for display in a list of puzzles",
   "explanation": "a clear explanation of how the code you have generated meets the requirements set out in the user's prompt.  This should be detailed enough to give confidence to a human reviewer that the code meets the requirements and does not contain any of the anti-patterns listed above."
 }
 

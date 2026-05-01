@@ -3,6 +3,10 @@ import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
+import { getPuzzleInfo, listPuzzles, updatePuzzleInfo, updatePuzzleState, writePuzzleInfo } from './dynamo.js';
+import { CreatePuzzleRequest, PuzzleInfo, PuzzleInfoUpdate, PuzzleStates} from '@puzzle-lab/common-lib';
+import { userIdentityFromHeaders } from './auth.js';
+
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -132,8 +136,15 @@ export async function createApp(): Promise<Express> {
         });
 
         try {
-          const responseJson = extractJson(result.response, helperPrefix);
-          res.json(responseJson);
+          const responseJson = extractJson(result.response, helperPrefix) as {jsx: string, explanation?: string, title?: string};
+          try {
+            if(responseJson.title) {
+              await updatePuzzleInfo(config["indexTable"], bundleId as string, {name: responseJson.title, state: 'visible'});
+            }
+          } catch(err) {
+            console.warn(`Failed to update puzzle title after generation for bundle ${bundleId}:`, err);
+          }
+          res.status(200).json(responseJson);
           return;
         } catch(err) {
           console.warn("Failed to parse Bedrock response as JSON, adding more context and retrying:", err);
@@ -146,6 +157,50 @@ export async function createApp(): Promise<Express> {
     } catch (err) {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });
+    }
+
+    try {
+      await updatePuzzleState(config["indexTable"], bundleId as string, 'visible');
+    } catch(err) {
+      console.error(`Failed to update puzzle state to visible for bundle ${bundleId}:`, err);
+    }
+  });
+
+  app.get('/api/whoami', (req: Request, res: Response) => {
+    try {
+      const info = userIdentityFromHeaders(req.headers);
+      res.status(200).json(info);
+    } catch(err) {
+      console.error(`Could not get user identity from headers: ${err}`);
+      res.status(500).json({ error: 'Failed to get user identity' });
+    }
+  });
+
+  app.post('/api/bundle/new', async (req: Request<never, CreatePuzzleRequest>, res: Response) => {
+    const parseResult = CreatePuzzleRequest.safeParse(req.body);
+    if(!parseResult.success) {
+      res.status(400).json({ error: 'Invalid request body', details: parseResult.error });
+      return;
+    }
+
+    try {
+      const userInfo = userIdentityFromHeaders(req.headers);
+
+      const info:PuzzleInfo = {
+        id: crypto.randomUUID(),
+        name: parseResult.data.name ?? "Untitled Puzzle",
+        author: userInfo.email,
+        model: config.bedrock_model_id,
+        state: 'draft',
+        lastModified: new Date().toISOString(),
+      };
+
+      await writePuzzleInfo(config.indexTable, info);
+
+      res.status(201).json({ id: info.id });
+    } catch(err) {
+      console.error("Error creating new puzzle bundle:", err);
+      res.status(500).json({ error: 'Failed to create new puzzle bundle' });
     }
   });
 
@@ -206,6 +261,79 @@ export async function createApp(): Promise<Express> {
   });
 
 
+  app.get('/api/index', async (req: Request, res: Response) => {
+    const state = PuzzleStates.safeParse(req.query.state);
+    if(state.error) {
+      res.status(400).json({status: "error", detail: "invalid bundle state"});
+      return;
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    if(isNaN(limit)) {
+      res.status(400).json({status: "error", detail: "limit must be a number"});
+      return;
+    }
+
+    try {
+      const {results, continuationToken} = await listPuzzles(config["indexTable"], state.data, limit, req.query.cursor as string|undefined);
+      res.status(200).json({
+        status: "ok",
+        bundles: results,
+        cursor: continuationToken
+      });
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs"
+      });
+    }
+  });
+
+  app.get('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const response = await getPuzzleInfo(config["indexTable"], bundleId);
+      if(response) {
+        res.status(200).json(response)
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
+    }
+  });
+
+  app.put('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}, PuzzleInfoUpdate>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const updated = await updatePuzzleInfo(config["indexTable"], bundleId, req.body);
+      if(updated) {
+        res.status(200).json({
+          status: "ok",
+          updated,
+        })
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
+    }
+  });
 
   // Error handling middleware
   app.use((err: any, req: Request, res: Response, next: any) => {
