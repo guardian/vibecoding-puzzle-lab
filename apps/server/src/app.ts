@@ -142,7 +142,7 @@ export async function createApp(): Promise<Express> {
               await updatePuzzleInfo(config["indexTable"], bundleId as string, {name: responseJson.title, state: 'visible'});
             }
           } catch(err) {
-            console.warn(`Failed to update puzzle title after generation for bundle ${bundleId}:`, err);
+            console.warn("Failed to update puzzle title after generation for bundle %s:", bundleId, err);
           }
           res.status(200).json(responseJson);
           return;
@@ -162,7 +162,7 @@ export async function createApp(): Promise<Express> {
     try {
       await updatePuzzleState(config["indexTable"], bundleId as string, 'visible');
     } catch(err) {
-      console.error(`Failed to update puzzle state to visible for bundle ${bundleId}:`, err);
+      console.error('Failed to update puzzle state to visible for bundle %s:', bundleId, err);
     }
   });
 
