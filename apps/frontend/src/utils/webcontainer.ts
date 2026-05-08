@@ -277,6 +277,7 @@ async function ensureDevServerRunning(
   runtime: WebContainerRuntimeState,
   container: WebContainer,
   log: LogFn,
+  onDevServerExit?: (exitCode: number) => void,
 ): Promise<string> {
   if (runtime.meta.previewUrl) {
     return runtime.meta.previewUrl
@@ -317,11 +318,15 @@ async function ensureDevServerRunning(
       runtime.handles.devServerProcess.exit
         .then((exitCode) => {
           logLine(log, `[system] dev server exited with code ${exitCode}`)
-          if (exitCode !== 0 && !settled) {
-            settled = true
-            clearTimeout(timeout)
-            unsubscribe()
-            reject(new Error(`Vite dev server exited with code ${exitCode}`))
+          if (exitCode !== 0) {
+            onDevServerExit?.(exitCode)
+
+            if (!settled) {
+              settled = true
+              clearTimeout(timeout)
+              unsubscribe()
+              reject(new Error(`Vite dev server exited with code ${exitCode}`))
+            }
           }
 
           runtime.handles.devServerProcess = null
@@ -389,7 +394,8 @@ export async function setupWebContainer(
   onCodeLoaded: (code: string) => void,
   onLog: LogFn,
   onStage?: (stage: SetupStage) => void,
-  progressFn?: (counter?:number, total?: number) => void
+  progressFn?: (counter?:number, total?: number) => void,
+  onDevServerExit?: (exitCode: number) => void,
 ): Promise<{ container: WebContainer; previewUrl: string }> {
   onStage?.('booting')
   logLine(onLog, '[system] booting WebContainer...')
@@ -430,7 +436,7 @@ export async function setupWebContainer(
 
   if(progressFn) progressFn(8,9);
   logLine(onLog, '[system] starting preview server...')
-  const previewUrl = await ensureDevServerRunning(runtime, container, onLog)
+  const previewUrl = await ensureDevServerRunning(runtime, container, onLog, onDevServerExit)
   if(progressFn) progressFn(9,9);
   return { container, previewUrl }
 }

@@ -120,6 +120,19 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
           setProgressBarValue(counter ?? 0);
           setProgressBarTotal(total ?? 0);
         },
+        (exitCode) => {
+          if (isDisposed) return;
+
+          const message = `Dev server crashed with exit code ${exitCode}. Check logs for build errors.`;
+          addDevServerLog(`[system] detected dev server crash (exit code ${exitCode})`);
+          setPreviewCrashed(true);
+          setLastPreviewError({
+            kind: "runtime-error",
+            message,
+          });
+          setPreviewUrl(null);
+          setContainerState(ContainerState.Error);
+        },
       );
 
       if (isDisposed) return;
