@@ -441,6 +441,28 @@ export async function setupWebContainer(
   return { container, previewUrl }
 }
 
+export async function restartDevServer(
+  runtime: WebContainerRuntimeState,
+  log: LogFn,
+  onDevServerExit?: (exitCode: number) => void,
+): Promise<string> {
+  const container = runtime.handles.webContainer
+  if (!container) {
+    throw new Error('No WebContainer instance available for restart')
+  }
+
+  if (runtime.handles.devServerProcess) {
+    runtime.handles.devServerProcess.kill()
+    runtime.handles.devServerProcess = null
+  }
+
+  runtime.handles.devServerStart = null
+  runtime.meta.previewUrl = null
+
+  logLine(log, '[system] restarting dev server...')
+  return ensureDevServerRunning(runtime, container, log, onDevServerExit)
+}
+
 export function releaseWebContainer(runtime: WebContainerRuntimeState) {
   runtime.meta.webContainerConsumers = Math.max(0, runtime.meta.webContainerConsumers - 1)
 
