@@ -81,7 +81,7 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
-    const helperPrefix = "{\"jsx\":";
+    const helperPrefix = "{\"jsx\": \"";
     const messages = [
       userMessage(`The code you provided is not working, please fix it. Here is the code: \`\`\`jsx\n${details.data.jsx}\`\`\` 
         The last error message was: "${details.data.lastError}". 
@@ -125,7 +125,7 @@ export async function createApp(): Promise<Express> {
         return;
       }
 
-      const helperPrefix = "{\"jsx\":";
+      const helperPrefix = "{\"jsx\": \"";
       let messages = [userMessage(sanitizedPromptText), assistantMessage(helperPrefix)];
 
       for(let retry = 0; retry < 3; retry++) {
