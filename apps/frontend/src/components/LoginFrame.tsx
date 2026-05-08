@@ -48,7 +48,7 @@ export const LoginFrame:React.FC<LoginFrameProps> = ({children, inserts}) => {
                             <span className="mr-3 text-sm text-slate-700">{loginInfo.info.name ?? loginInfo.info.email}</span>
                             {
                                 loginInfo.info.picture ? (
-                                    <img src={loginInfo.info.picture} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                                    <img src={`/api/avatar?url=${encodeURIComponent(loginInfo.info.picture)}`} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
                                 ) : (
                                     <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center">
                                         <span className="text-sm text-slate-700">{loginInfo.info.email.charAt(0).toUpperCase()}</span>

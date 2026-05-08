@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from 'express';
+import https from 'node:https';
 import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
@@ -43,6 +44,46 @@ function sanitizePromptText(promptText: string): string {
 
   // Remove all control/unprintable Unicode categories.
   return utf8Text.replace(/[\p{C}]/gu, '').trim();
+}
+
+const ALLOWED_AVATAR_HOSTS = new Set(['lh3.googleusercontent.com']);
+const ALLOWED_AVATAR_CONTENT_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+]);
+
+function validateAvatarUrl(rawUrl: unknown): URL | null {
+  if (typeof rawUrl !== 'string' || rawUrl.length === 0 || rawUrl.length > 2048) {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== 'https:') {
+    return null;
+  }
+
+  if (!ALLOWED_AVATAR_HOSTS.has(parsed.hostname)) {
+    return null;
+  }
+
+  if (parsed.username || parsed.password) {
+    return null;
+  }
+
+  if (parsed.port && parsed.port !== '443') {
+    return null;
+  }
+
+  return parsed;
 }
 
 export async function createApp(): Promise<Express> {
@@ -174,6 +215,70 @@ export async function createApp(): Promise<Express> {
       console.error(`Could not get user identity from headers: ${err}`);
       res.status(500).json({ error: 'Failed to get user identity' });
     }
+  });
+
+  app.get('/api/avatar', (req: Request, res: Response) => {
+    const parsedAvatarUrl = validateAvatarUrl(req.query.url);
+    if (!parsedAvatarUrl) {
+      res.status(400).json({ error: 'Invalid avatar URL' });
+      return;
+    }
+
+    const upstreamReq = https.get(
+      parsedAvatarUrl,
+      {
+        headers: {
+          // Some providers return 4xx unless a browser-like UA is present.
+          'User-Agent': 'PuzzleLabAvatarProxy/1.0',
+          'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+        timeout: 5000,
+      },
+      (upstreamRes) => {
+        const status = upstreamRes.statusCode ?? 502;
+        if (status < 200 || status >= 300) {
+          upstreamRes.resume();
+          res.status(502).json({ error: 'Failed to fetch avatar image' });
+          return;
+        }
+
+        const rawContentType = upstreamRes.headers['content-type'];
+        const contentType = Array.isArray(rawContentType) ? rawContentType[0] : rawContentType;
+        const normalizedContentType = (contentType ?? '').split(';')[0].trim().toLowerCase();
+        if (!ALLOWED_AVATAR_CONTENT_TYPES.has(normalizedContentType)) {
+          upstreamRes.resume();
+          res.status(415).json({ error: 'Unsupported avatar content type' });
+          return;
+        }
+
+        const rawContentLength = upstreamRes.headers['content-length'];
+        const contentLength = Array.isArray(rawContentLength) ? rawContentLength[0] : rawContentLength;
+        if (contentLength) {
+          res.setHeader('Content-Length', contentLength);
+        }
+
+        res.setHeader('Content-Type', normalizedContentType);
+        res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+
+        upstreamRes.pipe(res);
+      }
+    );
+
+    upstreamReq.on('timeout', () => {
+      upstreamReq.destroy(new Error('Upstream avatar request timed out'));
+    });
+
+    upstreamReq.on('error', (err) => {
+      console.error('Avatar proxy request failed:', err);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'Could not retrieve avatar image' });
+      }
+    });
+
+    req.on('close', () => {
+      upstreamReq.destroy();
+    });
   });
 
   app.post('/api/bundle/new', async (req: Request<never, CreatePuzzleRequest>, res: Response) => {
