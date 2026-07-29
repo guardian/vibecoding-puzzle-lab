@@ -32,13 +32,12 @@
     "@uiw/react-codemirror": "^4.25.9",
     "@vendia/serverless-express": "^4.12.6",
     "@webcontainer/api": "^1.6.1",
-    "aws-lambda": "^1.0.7",
     "express": "^5.2.1",
     "jszip": "^3.10.1",
     "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router": "^7.13.2",
+    "react-router": "^8.3.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -62,10 +61,10 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "aws-cdk": "2.1110.0",
-    "aws-cdk-lib": "2.241.0",
+    "aws-cdk": "2.1133.0",
+    "aws-cdk-lib": "2.262.2",
     "constructs": "10.5.1",
-    "esbuild": "^0.27.4",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -84,15 +83,18 @@
     "vite": "^8.0.1"
   },
   "overrides": {
+    "axios": "^1.18.1",
+    "brace-expansion": "^5.0.8",
+    "aws-cdk-lib": {
+      "brace-expansion": "^5.0.8"
+    },
+    "tsx": {
+      "esbuild": "^0.28.1"
+    },
     "@rolldown/binding-wasm32-wasi": {
       "@emnapi/core": "2.0.0-alpha.3",
       "@emnapi/runtime": "2.0.0-alpha.3"
     }
   },
-  "allowScripts": {
-    "aws-sdk@2.1693.0": true,
-    "esbuild@0.27.7": true,
-    "nx@23.1.0": true,
-    "unrs-resolver@1.11.1": true
-  }
+  "allowScripts": {}
 }
