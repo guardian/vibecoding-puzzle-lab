@@ -4,7 +4,7 @@ import globals from 'globals';
 export default [
   ...baseConfig,
   {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     ignores: ['dist/**'],
     languageOptions: {
       globals: globals.node,

@@ -3,7 +3,7 @@ import baseConfig from '../../eslint.config.js';
 export default [
   ...baseConfig,
   {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     ignores: ['dist/**'],
     rules: {
       // Newly reported after ESLint v9 / typescript-eslint v8 preset changes.
