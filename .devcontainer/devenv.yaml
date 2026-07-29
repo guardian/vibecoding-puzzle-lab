@@ -20,6 +20,7 @@ modules:
 # Optional: Ports to forward
 forwardPorts:
   - 5173
+  - 3000
 #   - "8000:9000"  # hostPort:containerPort
 
 # Optional: Mount directories from host to container
@@ -34,9 +35,9 @@ forwardPorts:
 # Optional: Commands to run after container creation
 # Each command has a 'cmd' field and a 'workingDirectory' field
 # e.g.
-# postCreateCommand:
-#   - cmd: "npm install"
-#     workingDirectory: "."
+postCreateCommand:
+  - cmd: "sudo apt-get update && sudo apt-get -y install ripgrep fish"
+    workingDirectory: "."
 #   - cmd: "make setup"
 #     workingDirectory: "/workspaces/project"
 # postStartCommand:
