@@ -28,3 +28,6 @@ dist-ssr
 .nx/cache
 .nx/workspace-data
 vite.config.*.timestamp*
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
