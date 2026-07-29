@@ -67,7 +67,7 @@ export class CognitoGatekeeper extends Construct {
         "all.staff.usa@guardian.co.uk",
         "all.staff.london.kingsplace@guardian.co.uk"
       ],
-      sessionTimeoutInMinutes = 15,
+      sessionTimeoutInMinutes = 45,
       credentialsSecretsManagerPath = `${prefix}/google-auth-credentials`,
     } = props.googleAuth;
 

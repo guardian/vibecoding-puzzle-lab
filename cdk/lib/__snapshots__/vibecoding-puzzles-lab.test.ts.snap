@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
 {
@@ -631,7 +631,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         "DefaultActions": [
           {
             "AuthenticateCognitoConfig": {
-              "SessionTimeout": "900",
+              "SessionTimeout": "2700",
               "UserPoolArn": {
                 "Fn::GetAtt": [
                   "CognitoGatekeeperuserpool3BFB7A36",
