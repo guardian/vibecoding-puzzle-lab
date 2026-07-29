@@ -26,7 +26,6 @@
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "vite:build",
-        "testTargetName": "test",
         "serveTargetName": "vite:serve",
         "devTargetName": "vite:dev",
         "previewTargetName": "vite:preview",
@@ -34,6 +33,12 @@
         "typecheckTargetName": "typecheck",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
+      }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testTargetName": "test"
       }
     },
     {
