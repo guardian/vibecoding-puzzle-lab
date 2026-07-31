@@ -83,6 +83,15 @@ function validateAvatarUrl(rawUrl: unknown): URL | null {
     return null;
   }
 
+  if (parsed.hash) {
+    return null;
+  }
+
+  const pathSegments = parsed.pathname.split('/');
+  if (pathSegments.includes('..')) {
+    return null;
+  }
+
   return parsed;
 }
 
@@ -224,8 +233,13 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
+    const upstreamUrl = new URL(
+      `${parsedAvatarUrl.pathname}${parsedAvatarUrl.search}`,
+      'https://lh3.googleusercontent.com'
+    );
+
     const upstreamReq = https.get(
-      parsedAvatarUrl,
+      upstreamUrl,
       {
         headers: {
           // Some providers return 4xx unless a browser-like UA is present.
