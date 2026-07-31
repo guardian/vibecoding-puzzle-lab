@@ -218,7 +218,7 @@ export async function createApp(): Promise<Express> {
 
   app.get('/api/whoami', (req: Request, res: Response) => {
     try {
-      const info = userIdentityFromHeaders(req.headers);
+      const info = userIdentityFromHeaders(req.headers, config.albSessionTimeoutMinutes);
       res.status(200).json(info);
     } catch(err) {
       console.error(`Could not get user identity from headers: ${err}`);
@@ -303,7 +303,7 @@ export async function createApp(): Promise<Express> {
     }
 
     try {
-      const userInfo = userIdentityFromHeaders(req.headers);
+      const userInfo = userIdentityFromHeaders(req.headers, config.albSessionTimeoutMinutes);
 
       const info:PuzzleInfo = {
         id: crypto.randomUUID(),

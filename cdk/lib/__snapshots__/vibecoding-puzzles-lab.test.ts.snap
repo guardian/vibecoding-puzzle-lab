@@ -886,6 +886,10 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
                 "Name": "APP",
                 "Value": "vibecoding-puzzles-lab",
               },
+              {
+                "Name": "ALB_SESSION_TIMEOUT_MINUTES",
+                "Value": "45",
+              },
             ],
             "Essential": true,
             "Image": {

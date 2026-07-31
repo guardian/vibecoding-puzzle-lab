@@ -6,6 +6,7 @@ interface Configuration {
     bedrock_model_id: string;
     s3_bucket: string;
     indexTable: string;
+    albSessionTimeoutMinutes: number;
 }
 
 export async function getParameter(name: string): Promise<string|undefined> {
@@ -37,9 +38,12 @@ export async function getConfig(basePath: string): Promise<Configuration> {
     if(!config['s3_bucket']) throw new Error("Missing s3_bucket in configuration");
     if(!config['indexTable']) throw new Error("Missing indexTable in configuration");
 
+    const albSessionTimeoutMinutes = parseInt(process.env.ALB_SESSION_TIMEOUT_MINUTES ?? '45', 10);
+
     return {
         bedrock_model_id: config['bedrock_model_id'],
         s3_bucket: config['s3_bucket'],
         indexTable: config['indexTable'],
+        albSessionTimeoutMinutes,
     };
 }

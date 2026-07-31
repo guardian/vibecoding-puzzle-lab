@@ -258,6 +258,9 @@ export class VibecodingPuzzlesLab extends GuStack {
     
     gatekeeper.connectToALB(this, svc.loadBalancer, svc.listener, svc.targetGroup);
 
+    // Keep the server's session timeout in sync with the ALB's AuthenticateCognitoAction setting.
+    container.addEnvironment('ALB_SESSION_TIMEOUT_MINUTES', String(gatekeeper.sessionTimeoutInMinutes));
+
     new GuCname(this, 'EC2AppDns', {
       app,
       ttl: Duration.minutes(5), //while testing
