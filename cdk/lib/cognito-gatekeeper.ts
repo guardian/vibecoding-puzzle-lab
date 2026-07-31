@@ -62,10 +62,7 @@ export class CognitoGatekeeper extends Construct {
 
     const {
       allowedGroups = [
-        "perm.and.ftc.uk@guardian.co.uk",
-        "all.staff.australia@guardian.co.uk",
-        "all.staff.usa@guardian.co.uk",
-        "all.staff.london.kingsplace@guardian.co.uk"
+        "engineering@guardian.co.uk",
       ],
       sessionTimeoutInMinutes = 45,
       credentialsSecretsManagerPath = `${prefix}/google-auth-credentials`,

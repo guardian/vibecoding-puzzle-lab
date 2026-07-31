@@ -252,7 +252,12 @@ export class VibecodingPuzzlesLab extends GuStack {
       vpc,
       googleAuth: {
         domain: domainName,
-        allowedGroups: ["engineering@guardian.co.uk"],
+        allowedGroups: [       
+          "perm.and.ftc.uk@guardian.co.uk",
+          "all.staff.australia@guardian.co.uk",
+          "all.staff.usa@guardian.co.uk",
+          "all.staff.london.kingsplace@guardian.co.uk"
+      ],
       }
     });
     

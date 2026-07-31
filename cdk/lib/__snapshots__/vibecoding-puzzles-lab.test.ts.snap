@@ -1325,7 +1325,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         },
         "Environment": {
           "Variables": {
-            "ALLOWED_GROUPS": "engineering@guardian.co.uk",
+            "ALLOWED_GROUPS": "perm.and.ftc.uk@guardian.co.uk,all.staff.australia@guardian.co.uk,all.staff.usa@guardian.co.uk,all.staff.london.kingsplace@guardian.co.uk",
             "APP": "vibecoding-puzzles-lab",
             "GATEKEEPER_FUNCTION_ARN": {
               "Fn::Join": [
