@@ -1,8 +1,13 @@
 import express, { Express, Request, Response } from 'express';
+import https from 'node:https';
 import { getConfig } from './config.js';
 import { createPresignedDownloadUrl, createPresignedUploadUrl, objectExistsInS3 } from './s3.js';
 import { callBedrock, userMessage, extractText, assistantMessage, extractJson } from './bedrock.js';
 import { DebugRequest } from './models.js';
+import { getPuzzleInfo, listPuzzles, updatePuzzleInfo, updatePuzzleState, writePuzzleInfo } from './dynamo.js';
+import { CreatePuzzleRequest, PuzzleInfo, PuzzleInfoUpdate, PuzzleStates} from '@puzzle-lab/common-lib';
+import { userIdentityFromHeaders } from './auth.js';
+
 
 function stripInvalidUnicodeSurrogates(input: string): string {
   let out = '';
@@ -41,6 +46,55 @@ function sanitizePromptText(promptText: string): string {
   return utf8Text.replace(/[\p{C}]/gu, '').trim();
 }
 
+const ALLOWED_AVATAR_HOSTS = new Set(['lh3.googleusercontent.com']);
+const ALLOWED_AVATAR_CONTENT_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+]);
+
+function validateAvatarUrl(rawUrl: unknown): URL | null {
+  if (typeof rawUrl !== 'string' || rawUrl.length === 0 || rawUrl.length > 2048) {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== 'https:') {
+    return null;
+  }
+
+  if (!ALLOWED_AVATAR_HOSTS.has(parsed.hostname)) {
+    return null;
+  }
+
+  if (parsed.username || parsed.password) {
+    return null;
+  }
+
+  if (parsed.port && parsed.port !== '443') {
+    return null;
+  }
+
+  if (parsed.hash) {
+    return null;
+  }
+
+  const pathSegments = parsed.pathname.split('/');
+  if (pathSegments.includes('..')) {
+    return null;
+  }
+
+  return parsed;
+}
+
 export async function createApp(): Promise<Express> {
   const app = express();
 
@@ -77,7 +131,7 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
-    const helperPrefix = "{\"jsx\":";
+    const helperPrefix = "{\"jsx\": \"";
     const messages = [
       userMessage(`The code you provided is not working, please fix it. Here is the code: \`\`\`jsx\n${details.data.jsx}\`\`\` 
         The last error message was: "${details.data.lastError}". 
@@ -121,7 +175,9 @@ export async function createApp(): Promise<Express> {
         return;
       }
 
-      const helperPrefix = "{\"jsx\":";
+      console.log('sanitized promptText for bundle %s: %s', bundleId, sanitizedPromptText);
+
+      const helperPrefix = "{\"jsx\": \"";
       let messages = [userMessage(sanitizedPromptText), assistantMessage(helperPrefix)];
 
       for(let retry = 0; retry < 3; retry++) {
@@ -131,9 +187,18 @@ export async function createApp(): Promise<Express> {
           modelId: config['bedrock_model_id'],
         });
 
+        console.log('Bedrock response for bundle %s:', bundleId, result.response);
         try {
-          const responseJson = extractJson(result.response, helperPrefix);
-          res.json(responseJson);
+          const responseJson = extractJson(result.response, helperPrefix) as {jsx: string, explanation?: string, title?: string};
+          try {
+            if(responseJson.title) {
+              console.log(`Updating puzzle title for bundle ${bundleId} to "${responseJson.title}"`);
+              await updatePuzzleInfo(config["indexTable"], bundleId as string, {name: responseJson.title, state: 'visible'});
+            }
+          } catch(err) {
+            console.warn("Failed to update puzzle title after generation for bundle %s:", bundleId, err);
+          }
+          res.status(200).json(responseJson);
           return;
         } catch(err) {
           console.warn("Failed to parse Bedrock response as JSON, adding more context and retrying:", err);
@@ -146,6 +211,120 @@ export async function createApp(): Promise<Express> {
     } catch (err) {
       console.error(`Error calling Bedrock for bundle ${bundleId}:`, err);
       res.status(500).json({ error: 'Failed to generate response' });
+    }
+
+    try {
+      await updatePuzzleState(config["indexTable"], bundleId as string, 'visible');
+    } catch(err) {
+      console.error('Failed to update puzzle state to visible for bundle %s:', bundleId, err);
+    }
+  });
+
+  app.get('/api/whoami', (req: Request, res: Response) => {
+    try {
+      const info = userIdentityFromHeaders(req.headers, config.albSessionTimeoutMinutes);
+      res.status(200).json(info);
+    } catch(err) {
+      console.error(`Could not get user identity from headers: ${err}`);
+      res.status(500).json({ error: 'Failed to get user identity' });
+    }
+  });
+
+  app.get('/api/avatar', (req: Request, res: Response) => {
+    const parsedAvatarUrl = validateAvatarUrl(req.query.url);
+    if (!parsedAvatarUrl) {
+      res.status(400).json({ error: 'Invalid avatar URL' });
+      return;
+    }
+
+    const safePath = parsedAvatarUrl.pathname.startsWith('/')
+      ? parsedAvatarUrl.pathname
+      : `/${parsedAvatarUrl.pathname}`;
+    const safeSearch = new URLSearchParams(parsedAvatarUrl.searchParams).toString();
+    const upstreamUrl = `https://lh3.googleusercontent.com${safePath}${safeSearch ? `?${safeSearch}` : ''}`;
+
+    const upstreamReq = https.get(
+      upstreamUrl,
+      {
+        headers: {
+          // Some providers return 4xx unless a browser-like UA is present.
+          'User-Agent': 'PuzzleLabAvatarProxy/1.0',
+          'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+        timeout: 5000,
+      },
+      (upstreamRes) => {
+        const status = upstreamRes.statusCode ?? 502;
+        if (status < 200 || status >= 300) {
+          upstreamRes.resume();
+          res.status(502).json({ error: 'Failed to fetch avatar image' });
+          return;
+        }
+
+        const rawContentType = upstreamRes.headers['content-type'];
+        const contentType = Array.isArray(rawContentType) ? rawContentType[0] : rawContentType;
+        const normalizedContentType = (contentType ?? '').split(';')[0].trim().toLowerCase();
+        if (!ALLOWED_AVATAR_CONTENT_TYPES.has(normalizedContentType)) {
+          upstreamRes.resume();
+          res.status(415).json({ error: 'Unsupported avatar content type' });
+          return;
+        }
+
+        const rawContentLength = upstreamRes.headers['content-length'];
+        const contentLength = Array.isArray(rawContentLength) ? rawContentLength[0] : rawContentLength;
+        if (contentLength) {
+          res.setHeader('Content-Length', contentLength);
+        }
+
+        res.setHeader('Content-Type', normalizedContentType);
+        res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+
+        upstreamRes.pipe(res);
+      }
+    );
+
+    upstreamReq.on('timeout', () => {
+      upstreamReq.destroy(new Error('Upstream avatar request timed out'));
+    });
+
+    upstreamReq.on('error', (err) => {
+      console.error('Avatar proxy request failed:', err);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'Could not retrieve avatar image' });
+      }
+    });
+
+    req.on('close', () => {
+      upstreamReq.destroy();
+    });
+  });
+
+  app.post('/api/bundle/new', async (req: Request<never, CreatePuzzleRequest>, res: Response) => {
+    const parseResult = CreatePuzzleRequest.safeParse(req.body);
+    if(!parseResult.success) {
+      res.status(400).json({ error: 'Invalid request body', details: parseResult.error });
+      return;
+    }
+
+    try {
+      const userInfo = userIdentityFromHeaders(req.headers, config.albSessionTimeoutMinutes);
+
+      const info:PuzzleInfo = {
+        id: crypto.randomUUID(),
+        name: parseResult.data.name ?? "Untitled Puzzle",
+        author: userInfo.email,
+        model: config.bedrock_model_id,
+        state: 'draft',
+        lastModified: new Date().toISOString(),
+      };
+
+      await writePuzzleInfo(config.indexTable, info);
+
+      res.status(201).json({ id: info.id });
+    } catch(err) {
+      console.error("Error creating new puzzle bundle:", err);
+      res.status(500).json({ error: 'Failed to create new puzzle bundle' });
     }
   });
 
@@ -206,6 +385,79 @@ export async function createApp(): Promise<Express> {
   });
 
 
+  app.get('/api/index', async (req: Request, res: Response) => {
+    const state = PuzzleStates.safeParse(req.query.state);
+    if(state.error) {
+      res.status(400).json({status: "error", detail: "invalid bundle state"});
+      return;
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    if(isNaN(limit)) {
+      res.status(400).json({status: "error", detail: "limit must be a number"});
+      return;
+    }
+
+    try {
+      const {results, continuationToken} = await listPuzzles(config["indexTable"], state.data, limit, req.query.cursor as string|undefined);
+      res.status(200).json({
+        status: "ok",
+        bundles: results,
+        cursor: continuationToken
+      });
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs"
+      });
+    }
+  });
+
+  app.get('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const response = await getPuzzleInfo(config["indexTable"], bundleId);
+      if(response) {
+        res.status(200).json(response)
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
+    }
+  });
+
+  app.put('/api/bundle/:bundleId/metadata', async (req:Request<{bundleId: string}, PuzzleInfoUpdate>, res: Response)=>{
+    const {bundleId} = req.params;
+
+    try {
+      const updated = await updatePuzzleInfo(config["indexTable"], bundleId, req.body);
+      if(updated) {
+        res.status(200).json({
+          status: "ok",
+          updated,
+        })
+      } else {
+        res.status(404).json({
+          status: "notfound"
+        })
+      }
+    } catch(err) {
+      console.error(String(err));
+      res.status(500).json({
+        status: "error",
+        detail: "database error, see logs for more details"
+      })
+    }
+  });
 
   // Error handling middleware
   app.use((err: any, req: Request, res: Response, next: any) => {

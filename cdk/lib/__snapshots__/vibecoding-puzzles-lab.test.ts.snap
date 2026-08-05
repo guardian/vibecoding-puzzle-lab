@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
 {
@@ -631,7 +631,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         "DefaultActions": [
           {
             "AuthenticateCognitoConfig": {
-              "SessionTimeout": "900",
+              "SessionTimeout": "2700",
               "UserPoolArn": {
                 "Fn::GetAtt": [
                   "CognitoGatekeeperuserpool3BFB7A36",
@@ -885,6 +885,10 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
               {
                 "Name": "APP",
                 "Value": "vibecoding-puzzles-lab",
+              },
+              {
+                "Name": "ALB_SESSION_TIMEOUT_MINUTES",
+                "Value": "45",
               },
             ],
             "Essential": true,
@@ -1321,7 +1325,7 @@ exports[`The VibecodingPuzzlesLab stack matches the snapshot 1`] = `
         },
         "Environment": {
           "Variables": {
-            "ALLOWED_GROUPS": "engineering@guardian.co.uk",
+            "ALLOWED_GROUPS": "perm.and.ftc.uk@guardian.co.uk,all.staff.australia@guardian.co.uk,all.staff.usa@guardian.co.uk,all.staff.london.kingsplace@guardian.co.uk",
             "APP": "vibecoding-puzzles-lab",
             "GATEKEEPER_FUNCTION_ARN": {
               "Fn::Join": [

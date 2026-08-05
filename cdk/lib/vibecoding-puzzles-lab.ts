@@ -252,11 +252,19 @@ export class VibecodingPuzzlesLab extends GuStack {
       vpc,
       googleAuth: {
         domain: domainName,
-        allowedGroups: ["engineering@guardian.co.uk"],
+        allowedGroups: [       
+          "perm.and.ftc.uk@guardian.co.uk",
+          "all.staff.australia@guardian.co.uk",
+          "all.staff.usa@guardian.co.uk",
+          "all.staff.london.kingsplace@guardian.co.uk"
+      ],
       }
     });
     
     gatekeeper.connectToALB(this, svc.loadBalancer, svc.listener, svc.targetGroup);
+
+    // Keep the server's session timeout in sync with the ALB's AuthenticateCognitoAction setting.
+    container.addEnvironment('ALB_SESSION_TIMEOUT_MINUTES', String(gatekeeper.sessionTimeoutInMinutes));
 
     new GuCname(this, 'EC2AppDns', {
       app,

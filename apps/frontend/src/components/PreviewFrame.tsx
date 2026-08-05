@@ -4,6 +4,7 @@ import {
   createWebContainerRuntimeState,
   maxDevServerLogs,
   releaseWebContainer,
+  restartDevServer,
   setupWebContainer,
   writeRootFile,
 } from "../utils/webcontainer";
@@ -120,6 +121,19 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
           setProgressBarValue(counter ?? 0);
           setProgressBarTotal(total ?? 0);
         },
+        (exitCode) => {
+          if (isDisposed) return;
+
+          const message = `Dev server crashed with exit code ${exitCode}. Check logs for build errors.`;
+          addDevServerLog(`[system] detected dev server crash (exit code ${exitCode})`);
+          setPreviewCrashed(true);
+          setLastPreviewError({
+            kind: "runtime-error",
+            message,
+          });
+          setPreviewUrl(null);
+          setContainerState(ContainerState.Error);
+        },
       );
 
       if (isDisposed) return;
@@ -141,6 +155,35 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
       releaseWebContainer(runtimeRef.current);
     };
   }, []);
+
+  async function handleRestartContainer() {
+    setPreviewCrashed(false);
+    setLastPreviewError(null);
+    setPreviewUrl(null);
+    setContainerState(ContainerState.Busy);
+    addDevServerLog("[system] restarting container...");
+
+    try {
+      const url = await restartDevServer(
+        runtimeRef.current,
+        addDevServerLog,
+        (exitCode) => {
+          const message = `Dev server crashed with exit code ${exitCode}. Check logs for build errors.`;
+          addDevServerLog(`[system] detected dev server crash (exit code ${exitCode})`);
+          setPreviewCrashed(true);
+          setLastPreviewError({ kind: "runtime-error", message });
+          setPreviewUrl(null);
+          setContainerState(ContainerState.Error);
+        },
+      );
+      setPreviewUrl(url);
+      setContainerState(ContainerState.Ready);
+    } catch (error) {
+      console.error("Error restarting dev server:", error);
+      addDevServerLog(`[system] restart error: ${String(error)}`);
+      setContainerState(ContainerState.Error);
+    }
+  }
 
   useEffect(() => {
     async function updateCodeInContainer() {
@@ -261,6 +304,14 @@ export const PreviewFrame: React.FC<PreviewFrameProps> = ({
             <strong>Error message:</strong> {lastPreviewError.message}
           </div>
         )}
+        <button
+          type="button"
+          className="restart-container-button"
+          onClick={handleRestartContainer}
+          disabled={containerState === ContainerState.Booting || containerState === ContainerState.Busy}
+        >
+          Restart Container
+        </button>
 
       {showLogs && (
         <div className="dev-server-logs" aria-label="Dev server logs">

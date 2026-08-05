@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Button } from "@headlessui/react";
 import { PreviewFrame, type PreviewError } from "../components/PreviewFrame";
 import { ModelState } from "../utils/api";
@@ -6,6 +6,8 @@ import { ContainerState } from "../utils/webcontainer";
 import { useNavigate } from "react-router";
 import "./Editor.css";
 import "./EditorView.css";
+import { EditableTitle } from "../components/EditableTitle";
+import { PuzzleInfoContext } from "../components/PuzzleInfoContext";
 
 interface EditorViewProps {
   bundleId: string;
@@ -47,7 +49,6 @@ function EditorView({
           Show conversation panel
         </button>
       )}
-
       {isPanelOpen && (
         <aside className="editor-view-side-panel" aria-label="Model conversation panel">
           <div className="editor-view-panel-header">
