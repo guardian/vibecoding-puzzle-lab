@@ -175,7 +175,7 @@ export async function createApp(): Promise<Express> {
         return;
       }
 
-      console.log(`sanitized promptText for bundle ${bundleId}:`, sanitizedPromptText);
+      console.log('sanitized promptText for bundle %s: %s', bundleId, sanitizedPromptText);
 
       const helperPrefix = "{\"jsx\": \"";
       let messages = [userMessage(sanitizedPromptText), assistantMessage(helperPrefix)];
@@ -187,7 +187,7 @@ export async function createApp(): Promise<Express> {
           modelId: config['bedrock_model_id'],
         });
 
-        console.log(`Bedrock response for bundle ${bundleId}:`, result.response);
+        console.log('Bedrock response for bundle %s:', bundleId, result.response);
         try {
           const responseJson = extractJson(result.response, helperPrefix) as {jsx: string, explanation?: string, title?: string};
           try {
@@ -237,10 +237,11 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
-    const upstreamUrl = new URL(
-      `${parsedAvatarUrl.pathname}${parsedAvatarUrl.search}`,
-      'https://lh3.googleusercontent.com'
-    );
+    const safePath = parsedAvatarUrl.pathname.startsWith('/')
+      ? parsedAvatarUrl.pathname
+      : `/${parsedAvatarUrl.pathname}`;
+    const safeSearch = new URLSearchParams(parsedAvatarUrl.searchParams).toString();
+    const upstreamUrl = `https://lh3.googleusercontent.com${safePath}${safeSearch ? `?${safeSearch}` : ''}`;
 
     const upstreamReq = https.get(
       upstreamUrl,
