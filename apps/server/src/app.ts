@@ -175,6 +175,8 @@ export async function createApp(): Promise<Express> {
         return;
       }
 
+      console.log(`sanitized promptText for bundle ${bundleId}:`, sanitizedPromptText);
+
       const helperPrefix = "{\"jsx\": \"";
       let messages = [userMessage(sanitizedPromptText), assistantMessage(helperPrefix)];
 
@@ -185,10 +187,12 @@ export async function createApp(): Promise<Express> {
           modelId: config['bedrock_model_id'],
         });
 
+        console.log(`Bedrock response for bundle ${bundleId}:`, result.response);
         try {
           const responseJson = extractJson(result.response, helperPrefix) as {jsx: string, explanation?: string, title?: string};
           try {
             if(responseJson.title) {
+              console.log(`Updating puzzle title for bundle ${bundleId} to "${responseJson.title}"`);
               await updatePuzzleInfo(config["indexTable"], bundleId as string, {name: responseJson.title, state: 'visible'});
             }
           } catch(err) {
